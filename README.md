@@ -1,2 +1,2 @@
-# ML_bldg_type
-MSc Thesis of Chris Poon
+# Inferring the residential building type from 3DBAG
+Master Thesis from Hoi-Kan Poon (Chris)
