@@ -67,8 +67,10 @@ def get_constructionyear(cursor, table):
         "SET bag_construction_year = NULL " + 
         "WHERE training_data." + table + "_tmp.bag_construction_year = 1005;"
     )
+    return
 
 def get_num_dwellings(cursor, table):
+
     print('\n>> Dataset {0} -- obtaining number of dwellings'.format(table))
 
     cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD COLUMN IF NOT EXISTS bag_no_dwellings INTEGER;")
@@ -84,10 +86,114 @@ def get_num_dwellings(cursor, table):
     )
     return
 
-def get_num_adjacent_bldg_w_residential():
+def compute_buffers(cursor, table, size):
+    """
+    Compute buffers around all footprint geometries and store results in database. 
+    
+    Parameters:
+    cursor -- cursor for database connection
+    table -- table to store the features in the database
+    size -- size of buffer (meters)
+    Returns: none
+    """
+
+    print('\n>> Dataset {0} -- computing buffers of {1}m around footprints'.format(table, size))
+
+    cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD COLUMN IF NOT EXISTS footprint_buffer GEOMETRY;")
+
+    cursor.execute(
+        "UPDATE training_data." + table + "_tmp " + 
+        "SET footprint_buffer = subquery.buffer " + 
+        "FROM " + 
+            "(SELECT bag_id, ST_Buffer(footprint_geom, " + str(size) + ", 'join=mitre') AS buffer " + 
+            "FROM training_data." + table + "_tmp) AS subquery " + 
+        "WHERE training_data." + table + "_tmp.bag_id = subquery.bag_id;"  
+    )
+
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS " + table + "_buf_idx_tmp " + 
+        "ON training_data." + table + "_tmp " + 
+        "USING GIST (footprint_buffer);"
+    )
     return
 
-def get_num_adjacent_bldg_of_adjacent_bldg():
+def get_num_adjacent_bldg_w_residential(cursor, table, adjacent_distance):
+    """
+    Get number of adjacent buildings of each building footprint and store results in the database. 
+    Parameters:
+    cursor -- cursor for database connection 
+    table -- table to store the features in the database
+    adjacent_distance -- list of distances to adjacent buildings
+    Returns: none
+    
+    """
+
+    # Compute buffer around footprints
+    compute_buffers(cursor, table, adjacent_distance)
+    
+    print('\n>> Dataset {0} -- obtaining number of adjacent residential buildings from footprints'.format(table))
+
+    cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD COLUMN IF NOT EXISTS no_adjacent_resi_bldg INTEGER;")
+
+    # Extract number of adjacent buildings based on buffer
+    cursor.execute(
+        "UPDATE training_data." + table + "_tmp " +
+        "SET no_adjacent_resi_bldg = subquery.no_adjacent " + 
+        "FROM " + 
+            "(SELECT a.bag_id, COUNT(*) AS no_adjacent " + 
+            "FROM training_data." + table + "_tmp AS a " + 
+            "JOIN training_data." + table + "_tmp AS b ON ST_INTERSECTS(a.footprint_buffer, b.footprint_geom) " + 
+            "WHERE a.bag_id != b.bag_id " + 
+            "AND a.bag_function != 'Others' AND a.bag_function != 'Unknown' " + 
+            "AND b.bag_function != 'Others' AND b.bag_function != 'Unknown' " + 
+            "GROUP BY a.bag_id) AS subquery " + 
+        "WHERE training_data." + table + "_tmp.bag_id = subquery.bag_id;"
+    )
+    
+    # Set number of adjacent buildings equal to zero when column is null
+    # (except from when footprint geometry is equal to null)
+    cursor.execute(
+        "UPDATE training_data." + table + "_tmp " + 
+        "SET no_adjacent_resi_bldg = 0 " + 
+        "WHERE no_adjacent_resi_bldg IS NULL " +
+        "AND footprint_geom IS NOT NULL;"
+    )
+
+    return
+
+def get_num_adjacent_bldg_of_adjacent_bldg(cursor, table):
+    """
+    Get (maximum) number of adjacent residential buildings of adjacent residential buildings
+    """
+
+    print('\n>> Dataset {0} -- obtaining number of adjacent buildings of adjacent building(s)'.format(table))
+
+    cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD COLUMN IF NOT EXISTS no_adjacent_of_adja_bldg INTEGER;")
+
+    cursor.execute(
+        "UPDATE training_data." + table + "_tmp " +
+        "SET no_adjacent_of_adja_bldg = subquery.no_adjacent_of_adja_bldg " +
+        "FROM " +
+            "(SELECT a.bag_id, MAX(b.no_adjacent_resi_bldg) AS no_adjacent_of_adja_bldg " +
+            "FROM training_data." + table + "_tmp AS a " +
+            "JOIN training_data." + table + "_tmp AS b ON ST_INTERSECTS(a.footprint_buffer, b.footprint_geom) " +
+            "WHERE a.bag_id != b.bag_id " +
+            "GROUP BY a.bag_id) AS subquery " +
+        "WHERE training_data." + table + "_tmp.bag_id = subquery.bag_id"
+    )
+
+    # Set number of adjacent buildings of adjacent buildings equal to zero when column is null
+    # (except from when footprint geometry is equal to null)
+    cursor.execute(
+        "UPDATE training_data." + table + "_tmp " + 
+        "SET no_adjacent_of_adja_bldg = 0 " + 
+        "WHERE no_adjacent_of_adja_bldg IS NULL " +
+        "AND footprint_geom IS NOT NULL;"
+    )
+
+    # Drop the buffer column
+    cursor.execute("ALTER TABLE training_data." + table + "_tmp DROP COLUMN footprint_buffer;")
+
     return
 
 def get_footprint(cursor, table): 
@@ -155,7 +261,79 @@ def get_num_vertices(cursor, table):
     )
     return
 
-def get_num_neighbours():
+def compute_centroids(cursor, table): 
+    """
+    Compute centroids of all footprint geometries and store results in database. 
+    
+    Parameters: 
+    cursor -- cursor for database connection
+    table -- table to store the features in the database
+    Returns: none
+     """
+
+    print('\n>> Dataset {0} -- computing centroids of footprints'.format(table))
+
+    cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD COLUMN IF NOT EXISTS footprint_centroid GEOMETRY;")   
+
+    cursor.execute(
+        "UPDATE training_data." + table + "_tmp " +  
+        "SET footprint_centroid = subquery.centroid " + 
+        "FROM " + 
+            "(SELECT bag_id, ST_Centroid(footprint_geom) as centroid " + 
+            "FROM training_data." + table + "_tmp) AS subquery " + 
+        "WHERE training_data." + table + "_tmp.bag_id = subquery.bag_id;"  
+    )
+
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS " + table + "_centroid_idx_tmp " + 
+        "ON training_data." + table + "_tmp " + 
+        "USING GIST (footprint_centroid);"
+    )
+
+def get_num_neighbours(cursor, table, neighbour_distances): 
+    """
+    Get number of neighbouring buildings at different distances from 
+    each building footprint centroid and store results in the database. 
+    Parameters:
+    cursor -- cursor for database connection
+    table -- table to store the features in the database
+    neighbour_distances -- list of distances to neighbouring building centroids
+    Returns: none
+    """
+
+    # Compute footprint centroid 
+    compute_centroids(cursor, table)
+
+    print('\n>> Dataset {0} -- obtaining number of neighbouring buildings from footprint centroids'.format(table))
+
+    # Extract number of neightbours based on centroid 
+    for dist in neighbour_distances: 
+        cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD COLUMN IF NOT EXISTS no_neighbours_" + str(dist) + "m INTEGER;")
+
+        cursor.execute(
+            "UPDATE training_data." + table + "_tmp " + 
+            "SET no_neighbours_" + str(dist) + "m = subquery.no_neighbours " + 
+            "FROM " + 
+                "(SELECT a.bag_id, COUNT(*) AS no_neighbours " + 
+                "FROM training_data." + table + "_tmp AS a " + 
+                "JOIN public.pand AS b " + 
+                "ON ST_DWithin(a.footprint_centroid, b.wkb_geometry, " + str(dist) + ") " + 
+                "WHERE a.bag_id != b.identificatie " +  
+                "GROUP BY a.bag_id) AS subquery " +
+            "WHERE training_data." + table + "_tmp.bag_id = subquery.bag_id;"
+        )
+
+        # Set number of neighbouring buildings equal to zero when column is null
+        # (except from when footprint geometry is equal to null)
+        cursor.execute(
+            "UPDATE training_data." + table + "_tmp " + 
+            "SET no_neighbours_" + str(dist) + "m = 0 " + 
+            "WHERE no_neighbours_" + str(dist) + "m IS NULL "
+            "AND footprint_geom IS NOT NULL;"
+        )
+    
+    # Drop the centroid column
+    cursor.execute("ALTER TABLE training_data." + table + "_tmp DROP COLUMN footprint_centroid;")
     return
 
 def get_mbr(cursor, table):
@@ -180,14 +358,14 @@ def get_mbr(cursor, table):
     )
 
     cursor.execute("ALTER TABLE training_data." + table + "_tmp DROP COLUMN bbox;")    
-
     return
 
 def get_bldg_length_width(cursor, table):
 
     get_mbr(cursor, table)
 
-    print('\n>> Dataset {0} -- computing footprint width and length'.format(table))
+    print('\n>> Dataset {0} -- obtaining footprint width and length'.format(table))
+
     cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD COLUMN IF NOT EXISTS fp_length DOUBLE PRECISION;")
     cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD COLUMN IF NOT EXISTS fp_width DOUBLE PRECISION;")
 
@@ -241,14 +419,14 @@ def main():
     #get features
     get_constructionyear(cursor, table)
     get_num_dwellings(cursor, table)
-    get_num_adjacent_bldg_w_residential() #not implemented yet
-    get_num_adjacent_bldg_of_adjacent_bldg() #not implemented yet
     get_footprint(cursor,table) #needed for other features
     get_fp_area(cursor,table)
     get_fp_perimeter(cursor,table)
     get_num_vertices(cursor,table)
-    get_num_neighbours() #not implemented yet
     get_bldg_length_width(cursor, table)
+    get_num_adjacent_bldg_w_residential(cursor, table, 0.1)
+    get_num_adjacent_bldg_of_adjacent_bldg(cursor, table)
+    get_num_neighbours(cursor, table, [25, 50, 75, 100])
 
 
     #close db connection
