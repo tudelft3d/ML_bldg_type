@@ -2,3 +2,5 @@
 db_parameters.txt
 
 __pycache__/
+
+.DS_Store/
