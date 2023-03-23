@@ -29,7 +29,7 @@ def setup_connection(user,password,database,host,port):
     port -- port number of database
     '''
     try:
-        print("\n>> Connecting to PostgreSQL database: {0}".format(database))
+        print(f'\n>> Connecting to PostgreSQL database: {database}')
         return psycopg2.connect(database=database, user=user, password=password, host=host, port=port)
 
     except (Exception, psycopg2.Error) as error:
@@ -62,16 +62,16 @@ def create_temp_table(cursor, table, pkey=None):
     pkey -- column to create primary key on (optional)
     """
 
-    print('\n>> Dataset {0} -- creating temporary unlogged table'.format(table))
+    print(f'\n>> Dataset {table} -- creating temporary unlogged table')
 
-    cursor.execute("DROP TABLE IF EXISTS training_data." + table + "_tmp;") # CASCADE?
-    cursor.execute("CREATE UNLOGGED TABLE training_data." + table + "_tmp AS TABLE training_data." + table + ";")
+    cursor.execute(f"DROP TABLE IF EXISTS training_data.{table}_tmp;") # CASCADE?
+    cursor.execute(f"CREATE UNLOGGED TABLE training_data.{table}_tmp AS TABLE training_data.{table};")
 
     if pkey is not None:
         try:
-            cursor.execute("ALTER TABLE training_data." + table + "_tmp ADD PRIMARY KEY (" + pkey + ");")
+            cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD PRIMARY KEY ({pkey});")
         except Exception as error:
-            print('\nError: {0}'.format(str(error)))
+            print(f'\nError: {str(error)}')
     else:
         pass
 
@@ -87,24 +87,24 @@ def replace_temp_table(cursor, table, pkey=None, geom_index=None):
 
     """
 
-    print('\n>> Dataset {0} -- copying unlogged table to logged table'.format(table))
-    cursor.execute("CREATE TABLE training_data." + table + "_new AS TABLE training_data." + table + "_tmp;")
-    cursor.execute("DROP TABLE training_data." + table + ";")
-    cursor.execute("ALTER TABLE training_data." + table + "_new RENAME TO " + table + ";")
-    cursor.execute("DROP TABLE training_data." + table + "_tmp;")
+    print(f'\n>> Dataset {table} -- copying unlogged table to logged table')
+    cursor.execute(f"CREATE TABLE training_data.{table}_new AS TABLE training_data.{table}_tmp;")
+    cursor.execute(f"DROP TABLE training_data.{table};")
+    cursor.execute(f"ALTER TABLE training_data.{table}_new RENAME TO {table};")
+    cursor.execute(f"DROP TABLE training_data.{table}_tmp;")
 
     if pkey is not None:
         try:
-            cursor.execute("ALTER TABLE training_data." + table + " ADD PRIMARY KEY (" + pkey + ");")
+            cursor.execute(f"ALTER TABLE training_data.{table} ADD PRIMARY KEY ({pkey});")
         except Exception as error:
-            print('\nError: {0}'.format(str(error)))
+            print(f'\nError: {str(error)}')
     else:
         pass
 
     if geom_index is not None:
         try:
-            cursor.execute("CREATE INDEX IF NOT EXISTS " + table + "_" + geom_index + "_idx ON training_data." + table + " USING GIST (" + geom_index + ");")
+            cursor.execute(f"CREATE INDEX IF NOT EXISTS {table}_{geom_index}_idx ON training_data.{table} USING GIST ({geom_index});")
         except Exception as error:
-            print('\nError: {0}'.format(str(error)))
+            print(f'\nError: {str(error)}')
     else:
         pass
