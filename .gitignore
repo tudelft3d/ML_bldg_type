@@ -1,6 +1,25 @@
 # ignore the text file with the database connection parameters
 db_parameters.txt
 
-__pycache__/
+# ignore macOS system files
+.DS_Store
 
-.DS_Store/
+# ignore data files
+data/3DBAG/*.json
+
+"data/H-Buildings 2022-11-07/"
+
+data/Holten/
+
+data/lvbag-extract-nl/
+
+"data/R-Buildings 2022-11-07/"
+
+data/Rijssen/
+
+lvbag-extract-nl.zip
+
+v20230101_v2_csv.csv
+
+# ignore folders
+__pycache__/
