@@ -7,13 +7,11 @@ db_parameters.txt
 # ignore data files
 data/3DBAG/*.json
 
-data/"H-Buildings 2022-11-07/"
+data/*/*.gml
 
 data/Holten/
 
 data/lvbag-extract-nl/
-
-data/"R-Buildings 2022-11-07/"
 
 data/Rijssen/
 
