@@ -5,6 +5,7 @@ Based on: Ellie Roy (https://github.com/ellieroy/no-floors-inference-NL)
 '''
 
 import db_functions
+import json
 
 #2D problems
 def get_buildingfunction(cursor, table):
@@ -43,8 +44,7 @@ def get_buildingfunction(cursor, table):
     )
 
     cursor.execute(f'''
-        ALTER TABLE training_data.{table}_tmp
-        DROP COLUMN uses;
+        ALTER TABLE training_data.{table}_tmp DROP COLUMN uses;
         '''
     )
     return
@@ -124,9 +124,9 @@ def compute_buffers(cursor, table, size):
     )
     return
 
-def get_num_adjacent_bldg_w_residential(cursor, table, adjacent_distance):
+def get_num_adjacent_bldg(cursor, table, adjacent_distance):
     """
-    Get number of adjacent buildings of each building footprint and store results in the database. 
+    Get number of adjacent buildings (of all functions except for "Others" and "Unknown") of each building footprint and store results in the database. 
     Parameters:
     cursor -- cursor for database connection 
     table -- table to store the features in the database
@@ -138,14 +138,14 @@ def get_num_adjacent_bldg_w_residential(cursor, table, adjacent_distance):
     # Compute buffer around footprints
     compute_buffers(cursor, table, adjacent_distance)
     
-    print(f'\n>> Dataset {table} -- obtaining number of adjacent residential buildings from footprints')
+    print(f'\n>> Dataset {table} -- obtaining number of adjacent buildings from footprints')
 
-    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS no_adjacent_resi_bldg INTEGER;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS no_adjacent_bldg INTEGER;")
 
     # Extract number of adjacent buildings based on buffer
     cursor.execute(f'''
         UPDATE training_data.{table}_tmp
-        SET no_adjacent_resi_bldg = subquery.no_adjacent
+        SET no_adjacent_bldg = subquery.no_adjacent
         FROM
             (SELECT a.bag_id, COUNT(*) AS no_adjacent
             FROM training_data.{table}_tmp AS a
@@ -162,8 +162,8 @@ def get_num_adjacent_bldg_w_residential(cursor, table, adjacent_distance):
     # (except from when footprint geometry is equal to null)
     cursor.execute(f'''
         UPDATE training_data.{table}_tmp
-        SET no_adjacent_resi_bldg = 0 
-        WHERE no_adjacent_resi_bldg IS NULL
+        SET no_adjacent_bldg = 0 
+        WHERE no_adjacent_bldg IS NULL
         AND footprint_geom IS NOT NULL;
         '''
     )
@@ -171,7 +171,7 @@ def get_num_adjacent_bldg_w_residential(cursor, table, adjacent_distance):
 
 def get_num_adjacent_bldg_of_adjacent_bldg(cursor, table):
     """
-    Get (maximum) number of adjacent residential buildings of adjacent residential buildings
+    Get (maximum) number of adjacent buildings of adjacent buildings
     """
 
     print(f'\n>> Dataset {table} -- obtaining number of adjacent buildings of adjacent building(s)')
@@ -182,7 +182,7 @@ def get_num_adjacent_bldg_of_adjacent_bldg(cursor, table):
         UPDATE training_data.{table}_tmp
         SET no_adjacent_of_adja_bldg = subquery.no_adjacent_of_adja_bldg
         FROM
-            (SELECT a.bag_id, MAX(b.no_adjacent_resi_bldg) AS no_adjacent_of_adja_bldg
+            (SELECT a.bag_id, MAX(b.no_adjacent_bldg) AS no_adjacent_of_adja_bldg
             FROM training_data.{table}_tmp AS a
             JOIN training_data.{table}_tmp AS b ON ST_INTERSECTS(a.footprint_buffer, b.footprint_geom)
             WHERE a.bag_id != b.bag_id
@@ -430,7 +430,7 @@ def get_3DBM_features(cursor, table, lod):
 
     print(f'\n>> Dataset {table} -- obtaining {lod} 3DBM features')
 
-    #Add new column to format bag id
+    #Add new column to format bag id <- REMINDER: THIS MAKE IT DOES NOT TAKE BUILDINGS WITH UNDERGROUND PARTS INTO ACCOUNT
     cursor.execute(f"ALTER TABLE input_data.{lod}_3dbm ADD COLUMN IF NOT EXISTS new_id VARCHAR")
 
     cursor.execute(f'''
@@ -448,9 +448,8 @@ def get_3DBM_features(cursor, table, lod):
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS wall_area_{lod} DOUBLE PRECISION;")
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS roof_area_{lod} DOUBLE PRECISION;")
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS ground_point_count_{lod} INTEGER;")
-    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS max_z_{lod} DOUBLE PRECISION;")
-    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS min_z_{lod} DOUBLE PRECISION;")
-    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS ground_z_{lod} DOUBLE PRECISION;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS height_max_{lod} DOUBLE PRECISION;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS height_min_roof_{lod} DOUBLE PRECISION;")
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS shared_walls_area_{lod} DOUBLE PRECISION;")
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS closest_distance_{lod} DOUBLE PRECISION;")
 
@@ -465,9 +464,8 @@ def get_3DBM_features(cursor, table, lod):
         wall_area_{lod} = {lod}_3dbm.wall_area_{lod},
         roof_area_{lod} = {lod}_3dbm.roof_area_{lod},
         ground_point_count_{lod} = {lod}_3dbm.ground_point_count_{lod},
-        max_z_{lod} = {lod}_3dbm."max_Z_{lod}",
-        min_z_{lod} = {lod}_3dbm."min_Z_{lod}",
-        ground_z_{lod} = {lod}_3dbm."ground_Z_{lod}",
+        height_max_{lod} = {lod}_3dbm."max_Z_{lod}" - {lod}_3dbm."ground_Z_{lod}",
+        height_min_roof_{lod} = {lod}_3dbm."min_Z_{lod}" - {lod}_3dbm."ground_Z_{lod}",    
         shared_walls_area_{lod} = {lod}_3dbm.shared_walls_area_{lod},
         closest_distance_{lod} = {lod}_3dbm.closest_distance_{lod}
         FROM input_data.{lod}_3dbm
@@ -476,14 +474,91 @@ def get_3DBM_features(cursor, table, lod):
     )
 
     cursor.execute(f'''
-        ALTER TABLE input_data.{lod}_3dbm
-        DROP COLUMN new_id;
+        ALTER TABLE input_data.{lod}_3dbm DROP COLUMN new_id;
+        '''
+    )
+
+    return
+
+#data cleaning
+def remove_redundant_features(cursor, table):
+
+    print(f'\n>> Dataset {table} -- removing redundant features')
+
+    #fp_area, ground_area_lod1, ground_area_lod2 -> ground_area_lod1 and ground_area_lod2 are (mostly) the same
+    #however there are differences in fp_area and ground_area_lod1 ranging from -1519 to 1671.82, for now fp_area is taken since it's from BAG
+    #Remove ground_area_lod1 and ground_area_lod2
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS ground_area_lod1;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS ground_area_lod2;")
+
+    #fp_perimeter, footprint_perimeter_lod1, footprint_perimeter_lod2 -> footprint_perimeter_lod1 and footprint_perimeter_lod2 are (mostly) the same
+    #however there are differences in fp_perimeter and footprint_perimeter_lod1 ranging from -164 to 110, for now fp_perimeter is taken since it's from BAG
+    #Remove footprint_perimeter_lod1 and footprint_perimeter_lod2
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS footprint_perimeter_lod1;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS footprint_perimeter_lod2;")
+
+    #fp_no_vertices is taken since it's from BAG
+    #Remove fp_no_vertices_simple, ground_point_count_lod1 and ground_point_count_lod2.
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS fp_no_vertices_simple;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS ground_point_count_lod1;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS ground_point_count_lod2;")
+
+    #obb_width_lod1 and obb_width_lod2 are the same, same for obb_length_lod1 and obb_length_lod2
+    #obb_width and obb_length are taken, after closer inspection of the footprint and the width and length values (also because they are from 3D BAG)
+    #Remove fp_length and fp_width
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS fp_length;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS fp_width;")
+
+    #Remove bag_function, used to filter out non-residential buildings
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS bag_function;")
+
+    #Remove footprint_geom, used for footprint functions
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS footprint_geom;")
+
+    #height_min_roof_lod1 = height_max_lod1 -> LoD 1.2
+    #Remove height_min_roof_lod1
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS height_min_roof_lod1;")
+
+    #Shared_wall_area and closest_distance added to double check adjacency, however it does not filter Other and Unknown function buildings
+    #Remove shared_wall_area_lod1, shared_wall_area_lod2, closest_distance_lod1 and closest_distance_lod2
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS shared_walls_area_lod1;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS shared_walls_area_lod2;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS closest_distance_lod1;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS closest_distance_lod2;")
+    return
+
+def remove_null_values(cursor, table):
+
+    print(f'\n>> Dataset {table} -- removing rows with NULL values')
+
+    cursor.execute(f'''
+        DELETE FROM training_data.c1_rh_tmp
+        WHERE actual_volume_lod1 IS NULL OR
+        convex_hull_volume_lod1 IS NULL OR
+        obb_width_lod1 IS NULL OR
+        obb_length_lod1 IS NULL OR
+        wall_area_lod1 IS NULL OR
+        roof_area_lod1 IS NULL OR
+        height_max_lod1 IS NULL OR
+        actual_volume_lod2 IS NULL OR
+        convex_hull_volume_lod2 IS NULL OR
+        obb_width_lod2 IS NULL OR
+        obb_length_lod2 IS NULL OR
+        wall_area_lod2 IS NULL OR
+        roof_area_lod2 IS NULL OR
+        height_max_lod2 IS NULL OR
+        height_min_roof_lod2 IS NULL;
         '''
     )
     return
 
 def main():
-    table = 'c1_rh'
+    with open('params.json', 'r') as f:
+        params = json.load(f)
+        
+        table = params['table']
+        buffer_size = params['buffer_size']
+        neighbour_distances = params['neighbour_distances']
 
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
@@ -498,22 +573,28 @@ def main():
     #create temporary table to store extracted features in
     db_functions.create_temp_table(cursor, table, pkey='bag_id')
 
-    #get building function and remove any rows where function is not residential/mixed-residential
+    #get building function
     get_buildingfunction(cursor, table)
+
+    #needed for other features
+    get_footprint(cursor,table) 
+
+    #get adjacent number of buildings (before removing non-residential)
+    get_num_adjacent_bldg(cursor, table, buffer_size)
+    get_num_adjacent_bldg_of_adjacent_bldg(cursor, table)
+
+    #remove any rows where function is not residential/mixed-residential
     print(f'\n>> Dataset {table} -- removing non-residential buildings')
     cursor.execute(f"DELETE FROM training_data.{table}_tmp WHERE bag_function != 'Residential' AND bag_function != 'Mixed-residential';")
 
     #get 2D features
     get_constructionyear(cursor, table)
     get_num_dwellings(cursor, table)
-    get_footprint(cursor,table) #needed for other features
     get_fp_area(cursor,table)
     get_fp_perimeter(cursor,table)
     get_num_vertices(cursor,table)
     get_bldg_length_width(cursor, table)
-    get_num_adjacent_bldg_w_residential(cursor, table, 0.1)
-    get_num_adjacent_bldg_of_adjacent_bldg(cursor, table)
-    get_num_neighbours(cursor, table, [25, 50, 75, 100])
+    get_num_neighbours(cursor, table, neighbour_distances)
     get_rooftype(cursor, table)
 
     #get 3D features
@@ -521,6 +602,13 @@ def main():
     lod2 = 'lod2'
     get_3DBM_features(cursor, table, lod1)
     get_3DBM_features(cursor, table, lod2)
+
+    #Clean data
+    remove_redundant_features(cursor, table)
+    remove_null_values(cursor, table)
+
+    #Replace original table with the temporary table containing the feature candidates
+    db_functions.replace_temp_table(cursor, table)
 
     #close db connection
     db_functions.close_connection(conn, cursor)
