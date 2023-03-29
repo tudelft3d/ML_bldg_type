@@ -21,7 +21,7 @@ def prepare_3DBM_features(lod):
                 'footprint_perimeter','obb_width','obb_length',
                 'ground_area', 'wall_area', 'roof_area', 'ground_point_count',
                 'max_Z', 'min_Z', 'ground_Z',
-                'shared_walls_area', 'closest_distance']
+                'hole_count','shared_walls_area', 'closest_distance']
     data_features = data[features]
     
     #Assign LoD to columnnames
@@ -31,7 +31,10 @@ def prepare_3DBM_features(lod):
     
     data_features.columns = new_columnnames
 
-    return data_features
+    #Remove buildings with holes
+    clean = data_features[data_features[f"hole_count_{lod}"] == 0]
+
+    return clean
 
 def import_3DBM_features(cursor, conn1, lod):
 
@@ -41,13 +44,14 @@ def import_3DBM_features(cursor, conn1, lod):
     print(f'\n>> Importing {lod} 3DBM features to database input_data.{lod}_3dbm')
 
     #Create table to store 3DBM features
-    cursor.execute(
-        f"DROP TABLE IF EXISTS input_data.{lod}_3dbm; " +
-        f"CREATE TABLE input_data.{lod}_3dbm (id VARCHAR, actual_volume_{lod} DOUBLE PRECISION, convex_hull_volume_{lod} DOUBLE PRECISION, " +
-        f"footprint_perimeter_{lod} DOUBLE PRECISION, obb_width_{lod} DOUBLE PRECISION, obb_length_{lod} DOUBLE PRECISION, " +
-        f"ground_area_{lod} DOUBLE PRECISION, wall_area_{lod} DOUBLE PRECISION, roof_area_{lod} DOUBLE PRECISION, ground_point_count_{lod} INTEGER, " +
-        f"max_Z_{lod} DOUBLE PRECISION, min_Z_{lod} DOUBLE PRECISION, ground_Z_{lod} DOUBLE PRECISION, " +
-        f"shared_walls_area_{lod} DOUBLE PRECISION, closest_distance_{lod} DOUBLE PRECISION);"
+    cursor.execute(f'''
+        DROP TABLE IF EXISTS input_data.{lod}_3dbm;
+        CREATE TABLE input_data.{lod}_3dbm (id VARCHAR, actual_volume_{lod} DOUBLE PRECISION, convex_hull_volume_{lod} DOUBLE PRECISION,
+        footprint_perimeter_{lod} DOUBLE PRECISION, obb_width_{lod} DOUBLE PRECISION, obb_length_{lod} DOUBLE PRECISION,
+        ground_area_{lod} DOUBLE PRECISION, wall_area_{lod} DOUBLE PRECISION, roof_area_{lod} DOUBLE PRECISION, ground_point_count_{lod} INTEGER,
+        max_Z_{lod} DOUBLE PRECISION, min_Z_{lod} DOUBLE PRECISION, ground_Z_{lod} DOUBLE PRECISION,
+        hole_count_{lod} INTEGER, shared_walls_area_{lod} DOUBLE PRECISION, closest_distance_{lod} DOUBLE PRECISION);
+        '''
     )
 
     #Import 3DBM features
