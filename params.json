@@ -1,4 +1,7 @@
 {
     "path_3DBAG": "./data/3DBAG/",
-    "path_3DBM": "../3d-building-metrics-main/"
+    "path_3DBM": "../3d-building-metrics-main/",
+    "table": "c1_rh",
+    "buffer_size": 0.1,
+    "neighbour_distances": [25, 50, 75, 100]
 }
