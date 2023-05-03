@@ -200,14 +200,14 @@ def main():
 
     data = pd.read_sql_query(f"SELECT * FROM training_data.{table};", conn)
 
-    # #Data statistics
-    # # quick_datacheck(data)
-    # # stats_data(data, table)
-    # class_distribution(data)
-    # data_correlation(data, table)
-    # #visualision of correlation
-    # data_corrmatrix(data)
-    # data_skew(data)
+    #Data statistics
+    # quick_datacheck(data)
+    # stats_data(data, table)
+    class_distribution(data)
+    data_correlation(data, table)
+    #visualision of correlation
+    data_corrmatrix(data)
+    data_skew(data)
 
     #Remove features based on correlation
     data = data.drop(['actual_volume_lod1',
@@ -216,6 +216,7 @@ def main():
                       'wall_area_lod1',
                       'roof_area_lod1',
                       'height_max_lod1'], axis='columns')
+    
     data_correlation(data, table)
     #visualision of correlation
     data_corrmatrix2(data)

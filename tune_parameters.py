@@ -41,14 +41,16 @@ def cross_validation(X_train, y_train, algorithm, param_name, param_range):
 
 def best_params(X_train, y_train, algorithm):
     if algorithm == 'rf':
-        estimator = RandomForestClassifier(random_state=0)
+        with open('params.json', 'r') as f:
+            params = json.load(f)
 
-        n_estimators = np.linspace(100, 1000, 10, dtype=int)
+            n_estimators = params['rf_n_estimators']
+            max_depth = params['rf_max_depth']
+            min_samples_split = params['rf_min_samples_split']
+            min_samples_leaf = params['rf_min_samples_leaf']
+            max_features = params['rf_max_features']
+
         criterion = ['gini', 'entropy', 'log_loss']
-        max_depth = np.linspace(5, 55, 11, dtype=int)
-        min_samples_split = np.linspace(2, 50, 13, dtype=int)
-        min_samples_leaf = np.linspace(1, 45, 10, dtype=int)
-        max_features = np.linspace(1, 10, 10, dtype=int)
         bootstrap = [True, False]
         class_weight = ['balanced', 'balanced_subsample', None]
 
@@ -61,15 +63,19 @@ def best_params(X_train, y_train, algorithm):
                    'bootstrap': bootstrap,
                    'class_weight': class_weight}
         
+        estimator = RandomForestClassifier(random_state=0)
+        
     elif algorithm == 'svc':
-        estimator = LinearSVC(random_state=0)
+        with open('params.json', 'r') as f:
+            params = json.load(f)
+
+            tol = params['tol']
+            C = params['C']
+            max_iter = params['max_iter']
 
         loss = ['hinge','squared_hinge']
         dual = [True, False]
-        tol = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        C = [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10, 11.0]
         class_weight = [None, 'balanced']
-        max_iter = [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500]
 
         cv_grid = {'loss': loss,
                    'dual': dual,
@@ -77,6 +83,8 @@ def best_params(X_train, y_train, algorithm):
                    'C': C,
                    'class_weight': class_weight,
                    'max_iter': max_iter}
+        
+        estimator = LinearSVC(random_state=0)
 
     else:
         print('Unknown algorithm')
@@ -179,38 +187,36 @@ def main():
                                   'roof_area_lod2',
                                   'bag_construction_year'], axis='columns')
 
-    # #SVC
-    # # -anova-f features
-    # X_train, X_test, y_train, y_test = select_features.split_data(anova_features)
-    # cross_validation(X_train, y_train, 'svc', 'tol', tol)
-    # cross_validation(X_train, y_train, 'svc', 'C', C)
-    # cross_validation(X_train, y_train, 'svc', 'max_iter', max_iter)
+    #SVC
+    # -anova-f features
+    X_train, X_test, y_train, y_test = select_features.split_data(anova_features)
+    cross_validation(X_train, y_train, 'svc', 'tol', tol)
+    cross_validation(X_train, y_train, 'svc', 'C', C)
+    cross_validation(X_train, y_train, 'svc', 'max_iter', max_iter)
 
-    # # -mi features
-    # X_train, X_test, y_train, y_test = select_features.split_data(mi_features)
-    # cross_validation(X_train, y_train, 'svc', 'tol', tol)
-    # cross_validation(X_train, y_train, 'svc', 'C', C)
-    # cross_validation(X_train, y_train, 'svc', 'max_iter', max_iter)
-    
+    # -mi features
+    X_train, X_test, y_train, y_test = select_features.split_data(mi_features)
+    cross_validation(X_train, y_train, 'svc', 'tol', tol)
+    cross_validation(X_train, y_train, 'svc', 'C', C)
+    cross_validation(X_train, y_train, 'svc', 'max_iter', max_iter)
 
-    # #RANDOM FOREST
-    # # -embedded features
+    #RANDOM FOREST
+    # -impurity features
     X_train, X_test, y_train, y_test = select_features.split_data(impurity_features)
-    # cross_validation(X_train, y_train, 'rf', 'n_estimators', n_estimators)
-    # cross_validation(X_train, y_train, 'rf', 'max_depth', max_depth)
+    cross_validation(X_train, y_train, 'rf', 'n_estimators', n_estimators)
+    cross_validation(X_train, y_train, 'rf', 'max_depth', max_depth)
     cross_validation(X_train, y_train, 'rf', 'min_samples_split', min_samples_split)
     cross_validation(X_train, y_train, 'rf', 'min_samples_leaf', min_samples_leaf)
-    # cross_validation(X_train, y_train, 'rf', 'max_features', max_features)
+    cross_validation(X_train, y_train, 'rf', 'max_features', max_features)
 
 
-    # # -wrapper features
+    # -permutation features
     X_train, X_test, y_train, y_test = select_features.split_data(permutation_features)
-    # cross_validation(X_train, y_train, 'rf', 'n_estimators', n_estimators)
-    # cross_validation(X_train, y_train, 'rf', 'max_depth', max_depth)
+    cross_validation(X_train, y_train, 'rf', 'n_estimators', n_estimators)
+    cross_validation(X_train, y_train, 'rf', 'max_depth', max_depth)
     cross_validation(X_train, y_train, 'rf', 'min_samples_split', min_samples_split)
     cross_validation(X_train, y_train, 'rf', 'min_samples_leaf', min_samples_leaf)
-    # cross_validation(X_train, y_train, 'rf', 'max_features', max_features)
-
+    cross_validation(X_train, y_train, 'rf', 'max_features', max_features)
     return
 
 if __name__ == '__main__':

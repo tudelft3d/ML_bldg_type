@@ -563,7 +563,6 @@ def main():
         
         table = params['table']
         buffer_size = params['buffer_size']
-        neighbour_distances = params['neighbour_distances']
 
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
@@ -587,7 +586,7 @@ def main():
     #get adjacent number of buildings (before removing non-residential)
     get_num_adjacent_bldg(cursor, table, buffer_size)
     get_num_adjacent_bldg_of_adjacent_bldg(cursor, table)
-    get_num_neighbours(cursor, table, neighbour_distances)
+    get_num_neighbours(cursor, table, [25, 50, 75, 100])
 
     #remove any rows where function is not residential/mixed-residential
     print(f'\n>> Dataset {table} -- removing non-residential buildings')
