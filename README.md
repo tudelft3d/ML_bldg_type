@@ -3,7 +3,8 @@ This repository contains the code developed during the graduation project of Hoi
 
 ## Functional Requirements
 This repository requires a PostGIS database containing:
-- The [CityGML-Based 3D City model testbed for Energy-Related Applications](https://github.com/tudelft3d/Testbed4UBEM) in a [3D City database](https://www.3dcitydb.org/3dcitydb/).
+- The [CityGML-Based 3D City model testbed for Energy-Related Applications](https://github.com/tudelft3d/Testbed4UBEM) in a [3D City database](https://www.3dcitydb.org/3dcitydb/) under the `citydb` schema.
+- The [3D BAG](https://3dbag.nl) in the same 3D City database under the `citydb2` schema.
 - The [Dutch National Energylabel dataset](https://www.ep-online.nl/) imported as csv file into the `input_data` schema.
 - The [BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) dataset imported with `ogr2ogr` into the `input_data` schema.
 
@@ -33,7 +34,20 @@ The implementation also requires the repository of [3DBM](https://github.com/tud
 - `python import_3DBM.py` to keep only the relevant features from the results and import them to the PostGIS database in the `input_data` schema.
 - `python import_groundtruth.py` to extract the labeled data from the [Dutch National Energylabel dataset](https://www.ep-online.nl/) and the [CityGML-Based 3D City model testbed for Energy-Related Applications](https://github.com/tudelft3d/Testbed4UBEM) to the `training_data` schema.
 - `python extract_features.py` to extract features from the [BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) dataset and [3D BAG](https://3dbag.nl) dataset to the `training_data`.
+- `python validate_features.py` to generate tables to validate certain extracted features, for example, the ones directly extracted from 3DBM.
+- `python analyze_features.py` computes data statistics and create figures visualizing the extracted features for further analysis. 
+- `python select_features.py` to perform feature selection with the filter and embedded method.
+- `python tune_parameters.py` to plot validation curves for the hyperparameters and it contains the best_params() function to get the best hyperparameters.
+- `python model_prediction.py` to make predictions and compute evaluation metrics via a confusion matrix.
 
 `db_functions.py` contains database functions, like connecting/disconnecting, creating a temporary table etc.
+
+## Parameters
+The `params.json` contains the following parameters that needs be set by the user:
+- `path_3DBAG`: path to a subset of 3DBAG containing the tiles for the specific case study.
+- `path_3DBM`: path to 3DBM repository.
+- `table`: table containing the specific case study.
+- `buffer_size`: buffer size of the footprints for the computation of the adjacency feature.
+It also contains the hyperparameters for Random Forest and SVC, the validation curves plotted in `tune_parameters.py` may help in defining the range of these hyperparameters.
 
 At the current time, the scripts support only one database connection.
