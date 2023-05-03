@@ -19,14 +19,28 @@ def extract_rh_groundtruth():
 
     #create table of labeled data (in training_data schema)
     cursor.execute('''
-    CREATE SCHEMA IF NOT EXISTS training_data;
-    DROP TABLE IF EXISTS training_data.c1_rh;
-    CREATE TABLE training_data.c1_rh AS
-    SELECT cityobject.gmlid as bag_id, cityobject_genericattrib.strval AS building_type
-    FROM citydb.cityobject, citydb.cityobject_genericattrib
-    WHERE cityobject.id = cityobject_genericattrib.cityobject_id AND cityobject_genericattrib.attrname = 'building_type'
-    ORDER BY bag_id;
-    ''')
+        CREATE SCHEMA IF NOT EXISTS training_data;
+        DROP TABLE IF EXISTS training_data.c1_rh;
+        CREATE TABLE training_data.c1_rh AS
+        SELECT gmlid AS bag_id
+        FROM citydb.cityobject
+        WHERE objectclass_id = 26 AND name IS NOT NULL AND gmlid != 'NL.IMBAG.Pand.0150100000059983';
+        '''
+    )
+
+    cursor.execute("ALTER TABLE training_data.c1_rh ADD COLUMN IF NOT EXISTS building_type VARCHAR;")
+
+    cursor.execute('''
+        UPDATE training_data.c1_rh
+        SET building_type = subquery.building_type
+        FROM
+            (SELECT cityobject.gmlid as bag_id, cityobject_genericattrib.strval AS building_type
+            FROM citydb.cityobject, citydb.cityobject_genericattrib
+            WHERE cityobject.id = cityobject_genericattrib.cityobject_id AND cityobject_genericattrib.attrname = 'dutch_building_type'
+            ORDER BY bag_id) AS subquery
+        WHERE training_data.c1_rh.bag_id = subquery.bag_id
+        '''
+    )
 
     #close db connection
     db_functions.close_connection(conn, cursor)
@@ -51,15 +65,16 @@ def extract_ep_groundtruth():
 
     #create table of labeled data (in training_data schema)
     cursor.execute('''
-    CREATE SCHEMA IF NOT EXISTS training_data;
-    DROP TABLE IF EXISTS training_data.c2_ep;
-    CREATE TABLE training_data.c2_ep AS
-    SELECT 'NL.IMBAG.Pand.' || "Pand_bagpandid" AS bag_id, ARRAY_AGG("Pand_gebouwtype") AS building_type
-    FROM input_data."ep-online"
-    WHERE "Pand_status" = 'Bestaand' AND "Pand_gebouwtype" IS NOT NULL AND "Pand_bagpandid" IS NOT NULL
-    GROUP BY bag_id
-    ORDER BY bag_id ASC;
-    ''')
+        CREATE SCHEMA IF NOT EXISTS training_data;
+        DROP TABLE IF EXISTS training_data.c2_ep;
+        CREATE TABLE training_data.c2_ep AS
+        SELECT 'NL.IMBAG.Pand.' || "Pand_bagpandid" AS bag_id, ARRAY_AGG("Pand_gebouwtype") AS building_type
+        FROM input_data."ep-online"
+        WHERE "Pand_status" = 'Bestaand' AND "Pand_gebouwtype" IS NOT NULL AND "Pand_bagpandid" IS NOT NULL
+        GROUP BY bag_id
+        ORDER BY bag_id ASC;
+        '''
+    )
 
     #close db connection
     db_functions.close_connection(conn, cursor)
@@ -81,13 +96,14 @@ def compare_groundtruth():
 
     #create table of labeled data (in training_data schema)
     cursor.execute('''
-    CREATE SCHEMA IF NOT EXISTS training_data;
-    DROP TABLE IF EXISTS training_data.comparison;
-    CREATE TABLE training_data.comparison AS
-    SELECT c1_rh.bag_id, c1_rh.building_type AS rh_building_type, c2_ep.building_type AS ep_building_type
-    FROM training_data.c1_rh, training_data.c2_ep
-    WHERE c1_rh.bag_id = c2_ep.bag_id;
-    ''')
+        CREATE SCHEMA IF NOT EXISTS training_data;
+        DROP TABLE IF EXISTS training_data.comparison;
+        CREATE TABLE training_data.comparison AS
+        SELECT c1_rh.bag_id, c1_rh.building_type AS rh_building_type, c2_ep.building_type AS ep_building_type
+        FROM training_data.c1_rh, training_data.c2_ep
+        WHERE c1_rh.bag_id = c2_ep.bag_id;
+        '''
+    )
 
     #close db connection
     db_functions.close_connection(conn, cursor)
@@ -96,7 +112,7 @@ def compare_groundtruth():
 def main():
     extract_rh_groundtruth()
     extract_ep_groundtruth()
-    compare_groundtruth()
+    #compare_groundtruth()
 
 if __name__ == '__main__':
     main()

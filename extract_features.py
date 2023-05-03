@@ -124,7 +124,7 @@ def compute_buffers(cursor, table, size):
     )
     return
 
-def get_num_adjacent_bldg(cursor, table, adjacent_distance):
+def get_num_adjacent_bldg(cursor, table, buffer_size):
     """
     Get number of adjacent buildings (of all functions except for "Others" and "Unknown") of each building footprint and store results in the database. 
     Parameters:
@@ -136,13 +136,13 @@ def get_num_adjacent_bldg(cursor, table, adjacent_distance):
     """
 
     # Compute buffer around footprints
-    compute_buffers(cursor, table, adjacent_distance)
+    compute_buffers(cursor, table, buffer_size)
     
     print(f'\n>> Dataset {table} -- obtaining number of adjacent buildings from footprints')
 
+    # Extract number of adjacent buildings based on buffer
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS no_adjacent_bldg INTEGER;")
 
-    # Extract number of adjacent buildings based on buffer
     cursor.execute(f'''
         UPDATE training_data.{table}_tmp
         SET no_adjacent_bldg = subquery.no_adjacent
@@ -332,11 +332,11 @@ def get_num_neighbours(cursor, table, neighbour_distances):
             UPDATE training_data.{table}_tmp
             SET no_neighbours_{dist}m = subquery.no_neighbours
             FROM
-                (SELECT a.bag_id, COUNT(*) AS no_neighbours
+                (SELECT a.bag_id, COUNT(*) AS no_neighbours, ARRAY_AGG(b.bag_id)
                 FROM training_data.{table}_tmp AS a
-                JOIN input_data.pand AS b
-                ON ST_DWithin(a.footprint_centroid, b.wkb_geometry, {dist})
-                WHERE a.bag_id != b.identificatie
+                JOIN training_data.{table}_tmp AS b
+                ON ST_DWithin(a.footprint_centroid, b.footprint_geom, {dist})
+                WHERE a.bag_id != b.bag_id
                 GROUP BY a.bag_id) AS subquery
             WHERE training_data.{table}_tmp.bag_id = subquery.bag_id;
             '''
@@ -418,7 +418,7 @@ def get_rooftype(cursor, table):
         SET roof_type = subquery.roof_type
         FROM
             (SELECT cityobject.gmlid AS bag_id, cityobject_genericattrib.strval AS roof_type
-            FROM citydb.cityobject, citydb.cityobject_genericattrib
+            FROM citydb2.cityobject, citydb2.cityobject_genericattrib
             WHERE attrname = 'dak_type' AND cityobject.id = cityobject_genericattrib.cityobject_id) AS subquery
         WHERE training_data.{table}_tmp.bag_id = subquery.bag_id;
         '''
@@ -508,6 +508,9 @@ def remove_redundant_features(cursor, table):
     #Remove fp_length and fp_width
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS fp_length;")
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS fp_width;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS obb_width_lod2;")
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS obb_length_lod2;")
+
 
     #Remove bag_function, used to filter out non-residential buildings
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS bag_function;")
@@ -525,6 +528,9 @@ def remove_redundant_features(cursor, table):
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS shared_walls_area_lod2;")
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS closest_distance_lod1;")
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS closest_distance_lod2;")
+
+    #dropped roof_type, worse performer from the features and complicated the code since it was the only categorical feature
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS roof_type;")
     return
 
 def remove_null_values(cursor, table):
@@ -533,7 +539,8 @@ def remove_null_values(cursor, table):
 
     cursor.execute(f'''
         DELETE FROM training_data.c1_rh_tmp
-        WHERE actual_volume_lod1 IS NULL OR
+        WHERE building_type IS NULL OR
+        actual_volume_lod1 IS NULL OR
         convex_hull_volume_lod1 IS NULL OR
         obb_width_lod1 IS NULL OR
         obb_length_lod1 IS NULL OR
@@ -542,8 +549,6 @@ def remove_null_values(cursor, table):
         height_max_lod1 IS NULL OR
         actual_volume_lod2 IS NULL OR
         convex_hull_volume_lod2 IS NULL OR
-        obb_width_lod2 IS NULL OR
-        obb_length_lod2 IS NULL OR
         wall_area_lod2 IS NULL OR
         roof_area_lod2 IS NULL OR
         height_max_lod2 IS NULL OR
@@ -577,11 +582,12 @@ def main():
     get_buildingfunction(cursor, table)
 
     #needed for other features
-    get_footprint(cursor,table) 
+    get_footprint(cursor, table)
 
     #get adjacent number of buildings (before removing non-residential)
     get_num_adjacent_bldg(cursor, table, buffer_size)
     get_num_adjacent_bldg_of_adjacent_bldg(cursor, table)
+    get_num_neighbours(cursor, table, neighbour_distances)
 
     #remove any rows where function is not residential/mixed-residential
     print(f'\n>> Dataset {table} -- removing non-residential buildings')
@@ -594,7 +600,6 @@ def main():
     get_fp_perimeter(cursor,table)
     get_num_vertices(cursor,table)
     get_bldg_length_width(cursor, table)
-    get_num_neighbours(cursor, table, neighbour_distances)
     get_rooftype(cursor, table)
 
     #get 3D features

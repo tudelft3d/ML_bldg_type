@@ -15,11 +15,14 @@ data/lvbag-extract-nl/
 
 data/Rijssen/
 
-data/triangulated/
+data/3DBAG/triangulated/
 
 lvbag-extract-nl.zip
 
 v20230101_v2_csv.csv
+
+# ignore generated results
+results/
 
 # ignore folders
 __pycache__/
