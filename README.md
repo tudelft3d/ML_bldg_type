@@ -32,6 +32,7 @@ The conda environment can be recreated using the `environment.yml` file with the
 The implementation also requires the repository of [3DBM](https://github.com/tudelft3d/3d-building-metrics) (path needs to be defined in `params.json` file) and it requires [cjio](https://github.com/cityjson/cjio) to be installed.
 
 ## Usage
+The order of the scripts listed below is also the order of execution.
 - `python utilize_3DBM.py` to merge the 3D BAG JSON files and filter LoD 1.2 and 2.2 with `cjio`, compute metrics of both LoDs with 3DBM and store the results in `merged_lod1.csv` and `merged_lod2.csv`. The results for this script are included in this repository, since running the script takes about 20 hours!
 - `python import_3DBM.py` to keep only the relevant features from the results and import them to the PostGIS database in the `input_data` schema.
 - `python import_groundtruth.py` to extract the labeled data from the [Dutch National Energylabel dataset](https://www.ep-online.nl/) and the [CityGML-Based 3D City model testbed for Energy-Related Applications](https://github.com/tudelft3d/Testbed4UBEM) to the `training_data` schema.
