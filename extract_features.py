@@ -85,7 +85,9 @@ def get_num_dwellings(cursor, table):
         FROM
             (SELECT pandid, COUNT(DISTINCT identificatie) AS bag_no_dwellings
             FROM input_data.verblijfsobject, unnest(pandref) AS pandid
-            GROUP BY pandid) AS subquery
+            WHERE status LIKE 'Verblijfsobject in gebruik%' AND eindgeldigheid IS NULL
+            GROUP BY pandid
+            ORDER BY pandid ASC) AS subquery
         WHERE training_data.{table}_tmp.bag_id = subquery.pandid;
         '''
     )

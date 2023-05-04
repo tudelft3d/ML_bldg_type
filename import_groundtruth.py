@@ -18,6 +18,7 @@ def extract_rh_groundtruth():
     cursor = conn.cursor()
 
     #create table of labeled data (in training_data schema)
+    #NL.IMBAG.Pand.0150100000059983 is manually removed, because its footprint geom in the BAG is faulty
     cursor.execute('''
         CREATE SCHEMA IF NOT EXISTS training_data;
         DROP TABLE IF EXISTS training_data.c1_rh;
@@ -64,17 +65,39 @@ def extract_ep_groundtruth():
     cursor = conn.cursor()
 
     #create table of labeled data (in training_data schema)
+    #extracts the building type from each verblijfsobject in ep-online then linked with verblijfsobject (BAG) dataset to check its status
+    #then linked to pandid via pandref (in verblijfsobject dataset)
+    #the pandref is then also linked to pand (BAG) dataset to check its status as well
     cursor.execute('''
         CREATE SCHEMA IF NOT EXISTS training_data;
         DROP TABLE IF EXISTS training_data.c2_ep;
         CREATE TABLE training_data.c2_ep AS
-        SELECT 'NL.IMBAG.Pand.' || "Pand_bagpandid" AS bag_id, ARRAY_AGG("Pand_gebouwtype") AS building_type
-        FROM input_data."ep-online"
-        WHERE "Pand_status" = 'Bestaand' AND "Pand_gebouwtype" IS NOT NULL AND "Pand_bagpandid" IS NOT NULL
+        SELECT bag_id, ARRAY_AGG("ep-online"."Pand_gebouwtype")
+        FROM input_data."ep-online", input_data.verblijfsobject, unnest(pandref) AS bag_id, input_data.pand
+        WHERE 'NL.IMBAG.Verblijfsobject.' || "Pand_bagverblijfsobjectid" = verblijfsobject.identificatie
+        AND verblijfsobject.status LIKE 'Verblijfsobject in gebruik%'
+        AND verblijfsobject.eindgeldigheid IS NULL
+        AND bag_id = pand.identificatie
+        AND pand.status LIKE 'Pand in gebruik%'
+        AND pand.eindgeldigheid IS NULL
         GROUP BY bag_id
         ORDER BY bag_id ASC;
         '''
     )
+
+    # #OLD QUERY
+    # #create table of labeled data (in training_data schema)
+    # cursor.execute('''
+    #     CREATE SCHEMA IF NOT EXISTS training_data;
+    #     DROP TABLE IF EXISTS training_data.c2_ep;
+    #     CREATE TABLE training_data.c2_ep AS
+    #     SELECT 'NL.IMBAG.Pand.' || "Pand_bagpandid" AS bag_id, ARRAY_AGG("Pand_gebouwtype") AS building_type
+    #     FROM input_data."ep-online"
+    #     WHERE "Pand_status" = 'Bestaand' AND "Pand_gebouwtype" IS NOT NULL AND "Pand_bagpandid" IS NOT NULL
+    #     GROUP BY bag_id
+    #     ORDER BY bag_id ASC;
+    #     '''
+    # )
 
     #close db connection
     db_functions.close_connection(conn, cursor)
