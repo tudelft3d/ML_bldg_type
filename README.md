@@ -3,13 +3,15 @@ This repository contains the code developed during the graduation project of Hoi
 
 ## Functional Requirements
 This repository requires a PostGIS database containing:
-- The [CityGML-Based 3D City model testbed for Energy-Related Applications](https://github.com/tudelft3d/Testbed4UBEM) in a [3D City database](https://www.3dcitydb.org/3dcitydb/) under the `citydb` schema.
-- The [3D BAG](https://3dbag.nl) in the same 3D City database under the `citydb2` schema.
-- The [Dutch National Energylabel dataset](https://www.ep-online.nl/) imported as csv file into the `input_data` schema.
-- The [BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) dataset imported with `ogr2ogr` into the `input_data` schema.
+- The [CityGML-Based 3D City model testbed for Energy-Related Applications](https://github.com/tudelft3d/Testbed4UBEM) (version 2022-11-07) in a [3D City database](https://www.3dcitydb.org/3dcitydb/) under the `citydb` schema.
+- The [3D BAG](https://3dbag.nl) (v21.09.8) in the same 3D City database under the `citydb2` schema.
+- The [Dutch National Energylabel dataset](https://www.ep-online.nl/) (v20230101_v2) imported as csv file into the `input_data` schema.
+- The [BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) (retrieved on January 8 2023) dataset imported with `ogr2ogr` into the `input_data` schema.
 
 Also:
-- A folder with a subset of [3D BAG](https://3dbag.nl), in this case the tiles containing Rijssen-Holten (path needs to be defined in `params.json` file).
+- A folder with a subset of [3D BAG](https://3dbag.nl) (v21.09.8), in this case the tiles containing Rijssen-Holten are already provided (path needs to be defined in `params.json` file).
+
+This implementation should work with different versions of the required datasets, but the results might differ.
 
 Users are required to create the file **db_parameters.txt** at the root of this project. This file is required so you can add the parameters to connect to the corresponding database that contains the data to perform the calculations required for this project. For security reasons, no database connections are provided in the python code.
 
