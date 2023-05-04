@@ -2,10 +2,10 @@ import db_functions
 
 def extract_rh_groundtruth():
     """
-    Extract pand bag_id's and building types from Rijssen-Holten open energy testbed in 3DCityDB schemas
+    Extract pand bag_id's and building types from Rijssen-Holten open energy test-bed in 3DCityDB schemas
     """
 
-    print('\n>> Extracting labeled data from energy testbed Rijssen-Holten')
+    print('\n>> Extracting labelled data from energy test-bed Rijssen-Holten')
 
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
@@ -17,7 +17,7 @@ def extract_rh_groundtruth():
     #create a cursor
     cursor = conn.cursor()
 
-    #create table of labeled data (in training_data schema)
+    #create table of labelled data (in training_data schema)
     #NL.IMBAG.Pand.0150100000059983 is manually removed, because its footprint geom in the BAG is faulty
     cursor.execute('''
         CREATE SCHEMA IF NOT EXISTS training_data;
@@ -52,7 +52,7 @@ def extract_ep_groundtruth():
     Extract pand bag_id's and building types from input_data."ep-online"
     """
 
-    print('\n>> Extracting labeled data from ep-online')
+    print('\n>> Extracting labelled data from ep-online')
 
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
@@ -64,7 +64,7 @@ def extract_ep_groundtruth():
     #create a cursor
     cursor = conn.cursor()
 
-    #create table of labeled data (in training_data schema)
+    #create table of labelled data (in training_data schema)
     #extracts the building type from each verblijfsobject in ep-online then linked with verblijfsobject (BAG) dataset to check its status
     #then linked to pandid via pandref (in verblijfsobject dataset)
     #the pandref is then also linked to pand (BAG) dataset to check its status as well
@@ -86,7 +86,7 @@ def extract_ep_groundtruth():
     )
 
     # #OLD QUERY
-    # #create table of labeled data (in training_data schema)
+    # #create table of labelled data (in training_data schema)
     # cursor.execute('''
     #     CREATE SCHEMA IF NOT EXISTS training_data;
     #     DROP TABLE IF EXISTS training_data.c2_ep;
@@ -105,7 +105,7 @@ def extract_ep_groundtruth():
 
 def compare_groundtruth():
 
-    print('\n>> Creating table to compare labeled data from ep-online to Rijssen-Holten energy testbed')
+    print('\n>> Creating table to compare labelled data from ep-online to Rijssen-Holten energy test-bed')
 
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
@@ -117,7 +117,7 @@ def compare_groundtruth():
     #create a cursor
     cursor = conn.cursor()
 
-    #create table of labeled data (in training_data schema)
+    #create table of labelled data (in training_data schema)
     cursor.execute('''
         CREATE SCHEMA IF NOT EXISTS training_data;
         DROP TABLE IF EXISTS training_data.comparison;
