@@ -5,7 +5,7 @@ db_parameters.txt
 .DS_Store
 
 # ignore data files
-data/3DBAG/*.json
+data/3DBAG/*city.json
 
 data/*/*.gml
 
