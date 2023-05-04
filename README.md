@@ -11,7 +11,7 @@ This repository requires a PostGIS database containing:
 Also:
 - A folder with a subset of [3D BAG](https://3dbag.nl) (v21.09.8), in this case the tiles containing Rijssen-Holten are already provided (path needs to be defined in `params.json` file).
 
-This implementation should work with different versions of the required datasets, but the results might differ.
+This implementation might work with different versions of the required datasets, but the results might be different.
 
 Users are required to create the file **db_parameters.txt** at the root of this project. This file is required so you can add the parameters to connect to the corresponding database that contains the data to perform the calculations required for this project. For security reasons, no database connections are provided in the python code.
 
