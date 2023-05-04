@@ -72,7 +72,7 @@ def extract_ep_groundtruth():
         CREATE SCHEMA IF NOT EXISTS training_data;
         DROP TABLE IF EXISTS training_data.c2_ep;
         CREATE TABLE training_data.c2_ep AS
-        SELECT bag_id, ARRAY_AGG("ep-online"."Pand_gebouwtype")
+        SELECT bag_id, ARRAY_AGG("ep-online"."Pand_gebouwtype") AS building_type
         FROM input_data."ep-online", input_data.verblijfsobject, unnest(pandref) AS bag_id, input_data.pand
         WHERE 'NL.IMBAG.Verblijfsobject.' || "Pand_bagverblijfsobjectid" = verblijfsobject.identificatie
         AND verblijfsobject.status LIKE 'Verblijfsobject in gebruik%'
