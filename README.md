@@ -47,10 +47,12 @@ The order of the scripts listed below is also the order of execution.
 
 ## Parameters
 The `params.json` contains the following parameters that needs be set by the user:
-- `path_3DBAG`: path to a subset of 3DBAG containing the tiles for the specific case study.
-- `path_3DBM`: path to 3DBM repository.
 - `table`: table containing the specific case study.
+- `citydb`: 3D City DB schema containing the specific case study (citydb and citydb2 are reserved for c1_rh).
+- `path_3DBAG`: path to the folder containing the tiles of the 3D BAG subset for the specific case study.
+- `path_3DBM`: path to 3DBM repository.
 - `buffer_size`: buffer size of the footprints for the computation of the adjacency feature.
+
 It also contains the hyperparameters for Random Forest and SVC, the validation curves plotted in `tune_parameters.py` may help in defining the range of these hyperparameters.
 
 At the current time, the scripts support only one database connection.
