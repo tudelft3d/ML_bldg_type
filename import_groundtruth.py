@@ -1,11 +1,10 @@
 import db_functions
+import json
 
 def extract_rh_groundtruth():
     """
     Extract pand bag_id's and building types from Rijssen-Holten open energy test-bed in 3DCityDB schemas
     """
-
-    print('\n>> Extracting labelled data from energy test-bed Rijssen-Holten')
 
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
@@ -17,7 +16,9 @@ def extract_rh_groundtruth():
     #create a cursor
     cursor = conn.cursor()
 
-    #create table of labelled data (in training_data schema)
+    print('\n>> Extracting labelled data from energy test-bed Rijssen-Holten to table training_data.c1_rh')
+
+    #create table with bag_id's of buildings in case study
     #NL.IMBAG.Pand.0150100000059983 is manually removed, because its footprint geom in the BAG is faulty
     cursor.execute('''
         CREATE SCHEMA IF NOT EXISTS training_data;
@@ -29,8 +30,8 @@ def extract_rh_groundtruth():
         '''
     )
 
+    #add labelled data
     cursor.execute("ALTER TABLE training_data.c1_rh ADD COLUMN IF NOT EXISTS building_type VARCHAR;")
-
     cursor.execute('''
         UPDATE training_data.c1_rh
         SET building_type = subquery.building_type
@@ -52,8 +53,6 @@ def extract_ep_groundtruth():
     Extract pand bag_id's and building types from input_data."ep-online"
     """
 
-    print('\n>> Extracting labelled data from ep-online')
-
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
 
@@ -64,14 +63,16 @@ def extract_ep_groundtruth():
     #create a cursor
     cursor = conn.cursor()
 
+    print('\n>> Extracting labelled data from ep-online to table training_data.c0_ep')
+
     #create table of labelled data (in training_data schema)
     #extracts the building type from each verblijfsobject in ep-online then linked with verblijfsobject (BAG) dataset to check its status
     #then linked to pandid via pandref (in verblijfsobject dataset)
     #the pandref is then also linked to pand (BAG) dataset to check its status as well
     cursor.execute('''
         CREATE SCHEMA IF NOT EXISTS training_data;
-        DROP TABLE IF EXISTS training_data.c2_ep;
-        CREATE TABLE training_data.c2_ep AS
+        DROP TABLE IF EXISTS training_data.c0_ep;
+        CREATE TABLE training_data.c0_ep AS
         SELECT bag_id, ARRAY_AGG("ep-online"."Pand_gebouwtype") AS building_type
         FROM input_data."ep-online", input_data.verblijfsobject, unnest(pandref) AS bag_id, input_data.pand
         WHERE 'NL.IMBAG.Verblijfsobject.' || "Pand_bagverblijfsobjectid" = verblijfsobject.identificatie
@@ -85,27 +86,11 @@ def extract_ep_groundtruth():
         '''
     )
 
-    # #OLD QUERY
-    # #create table of labelled data (in training_data schema)
-    # cursor.execute('''
-    #     CREATE SCHEMA IF NOT EXISTS training_data;
-    #     DROP TABLE IF EXISTS training_data.c2_ep;
-    #     CREATE TABLE training_data.c2_ep AS
-    #     SELECT 'NL.IMBAG.Pand.' || "Pand_bagpandid" AS bag_id, ARRAY_AGG("Pand_gebouwtype") AS building_type
-    #     FROM input_data."ep-online"
-    #     WHERE "Pand_status" = 'Bestaand' AND "Pand_gebouwtype" IS NOT NULL AND "Pand_bagpandid" IS NOT NULL
-    #     GROUP BY bag_id
-    #     ORDER BY bag_id ASC;
-    #     '''
-    # )
-
     #close db connection
     db_functions.close_connection(conn, cursor)
     return
 
-def compare_groundtruth():
-
-    print('\n>> Creating table to compare labelled data from ep-online to Rijssen-Holten energy test-bed')
+def get_groundtruth(table, citydbx):
 
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
@@ -117,14 +102,26 @@ def compare_groundtruth():
     #create a cursor
     cursor = conn.cursor()
 
-    #create table of labelled data (in training_data schema)
-    cursor.execute('''
+    print(f'\n>> Creating table {table} with bag_ids from {citydbx} and extract labelled data from c0_ep')
+
+    #create table with bag_id's of buildings in case study
+    cursor.execute(f'''
         CREATE SCHEMA IF NOT EXISTS training_data;
-        DROP TABLE IF EXISTS training_data.comparison;
-        CREATE TABLE training_data.comparison AS
-        SELECT c1_rh.bag_id, c1_rh.building_type AS rh_building_type, c2_ep.building_type AS ep_building_type
-        FROM training_data.c1_rh, training_data.c2_ep
-        WHERE c1_rh.bag_id = c2_ep.bag_id;
+        DROP TABLE IF EXISTS training_data.{table};
+        CREATE TABLE training_data.{table} AS
+        SELECT gmlid AS bag_id
+        FROM {citydbx}.cityobject
+        WHERE objectclass_id = 26;
+        '''
+    )
+
+    #add labelled data
+    cursor.execute(f"ALTER TABLE training_data.{table} ADD COLUMN IF NOT EXISTS building_type text[];")
+    cursor.execute(f'''
+        UPDATE training_data.{table}
+        SET building_type = c0_ep.building_type
+        FROM training_data.c0_ep
+        WHERE {table}.bag_id = training_data.c0_ep.bag_id
         '''
     )
 
@@ -133,9 +130,20 @@ def compare_groundtruth():
     return
 
 def main():
-    extract_rh_groundtruth()
-    extract_ep_groundtruth()
-    #compare_groundtruth()
+    with open('params.json', 'r') as f:
+        params = json.load(f)
+        
+        table = params['table']
+        citydbx = params['citydbx']
+
+    #extract_ep_groundtruth()
+    
+    if table == 'c1_rh' and citydbx == 'citydb':
+        extract_rh_groundtruth()
+        return
+    else:
+        get_groundtruth(table, citydbx)
+        return
 
 if __name__ == '__main__':
     main()

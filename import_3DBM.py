@@ -36,16 +36,16 @@ def prepare_3DBM_features(lod):
 
     return clean
 
-def import_3DBM_features(cursor, conn1, lod):
+def import_3DBM_features(cursor, conn1, lod, table):
 
     #Prepare the metrics from 3DBM to be imported as features
     features = prepare_3DBM_features(lod)
 
-    print(f'\n>> Importing {lod} 3DBM features to database input_data.{lod}_3dbm')
+    print(f'\n>> Importing {lod} 3DBM features to database input_data.{table}_{lod}_3dbm')
 
     #Create table to store 3DBM features
     cursor.execute(f'''
-        DROP TABLE IF EXISTS input_data.{lod}_3dbm;
+        DROP TABLE IF EXISTS input_data.{table}_{lod}_3dbm;
         CREATE TABLE input_data.{lod}_3dbm (id VARCHAR, actual_volume_{lod} DOUBLE PRECISION, convex_hull_volume_{lod} DOUBLE PRECISION,
         footprint_perimeter_{lod} DOUBLE PRECISION, obb_width_{lod} DOUBLE PRECISION, obb_length_{lod} DOUBLE PRECISION,
         ground_area_{lod} DOUBLE PRECISION, wall_area_{lod} DOUBLE PRECISION, roof_area_{lod} DOUBLE PRECISION, ground_point_count_{lod} INTEGER,
@@ -55,11 +55,16 @@ def import_3DBM_features(cursor, conn1, lod):
     )
 
     #Import 3DBM features
-    features.to_sql(f'{lod}_3dbm', conn1, schema='input_data', if_exists= 'replace')
+    features.to_sql(f'{table}_{lod}_3dbm', conn1, schema='input_data', if_exists= 'replace')
 
     return
 
 def main():
+    with open('params.json', 'r') as f:
+        params = json.load(f)
+        
+        table = params['table']
+
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
 
@@ -76,11 +81,9 @@ def main():
 
     lod1 = 'lod1'
     lod2 = 'lod2'
-    # lod1_3DBM_features = prepare_3DBM_features(lod1)
-    # lod2_3DBM_features = prepare_3DBM_features(lod2)
 
-    import_3DBM_features(cursor, conn1, lod1)
-    import_3DBM_features(cursor, conn1, lod2)
+    import_3DBM_features(cursor, conn1, lod1, table)
+    import_3DBM_features(cursor, conn1, lod2, table)
 
     #close db connections
     db_functions.close_connection(conn, cursor)

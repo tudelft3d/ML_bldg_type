@@ -409,23 +409,23 @@ def get_bldg_length_width(cursor, table):
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN side_2;")
     return
 
-def get_rooftype(cursor, table):
+# def get_rooftype(cursor, table):
 
-    print(f'\n>> Dataset {table} -- obtaining roof type')
+#     print(f'\n>> Dataset {table} -- obtaining roof type')
 
-    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS roof_type VARCHAR;")
+#     cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS roof_type VARCHAR;")
 
-    cursor.execute(f'''
-        UPDATE training_data.{table}_tmp
-        SET roof_type = subquery.roof_type
-        FROM
-            (SELECT cityobject.gmlid AS bag_id, cityobject_genericattrib.strval AS roof_type
-            FROM citydb2.cityobject, citydb2.cityobject_genericattrib
-            WHERE attrname = 'dak_type' AND cityobject.id = cityobject_genericattrib.cityobject_id) AS subquery
-        WHERE training_data.{table}_tmp.bag_id = subquery.bag_id;
-        '''
-    )
-    return
+#     cursor.execute(f'''
+#         UPDATE training_data.{table}_tmp
+#         SET roof_type = subquery.roof_type
+#         FROM
+#             (SELECT cityobject.gmlid AS bag_id, cityobject_genericattrib.strval AS roof_type
+#             FROM citydb2.cityobject, citydb2.cityobject_genericattrib
+#             WHERE attrname = 'dak_type' AND cityobject.id = cityobject_genericattrib.cityobject_id) AS subquery
+#         WHERE training_data.{table}_tmp.bag_id = subquery.bag_id;
+#         '''
+#     )
+#     return
 
 #3D problems
 def get_3DBM_features(cursor, table, lod):
@@ -532,7 +532,7 @@ def remove_redundant_features(cursor, table):
     cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS closest_distance_lod2;")
 
     #dropped roof_type, worse performer from the features and complicated the code since it was the only categorical feature
-    cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS roof_type;")
+    # REMOVED cursor.execute(f"ALTER TABLE training_data.{table}_tmp DROP COLUMN IF EXISTS roof_type;")
     return
 
 def remove_null_values(cursor, table):
@@ -540,7 +540,7 @@ def remove_null_values(cursor, table):
     print(f'\n>> Dataset {table} -- removing rows with NULL values')
 
     cursor.execute(f'''
-        DELETE FROM training_data.c1_rh_tmp
+        DELETE FROM training_data.{table}_tmp
         WHERE building_type IS NULL OR
         actual_volume_lod1 IS NULL OR
         convex_hull_volume_lod1 IS NULL OR
@@ -601,7 +601,7 @@ def main():
     get_fp_perimeter(cursor,table)
     get_num_vertices(cursor,table)
     get_bldg_length_width(cursor, table)
-    get_rooftype(cursor, table)
+    # get_rooftype(cursor, table)
 
     #get 3D features
     lod1 = 'lod1'
