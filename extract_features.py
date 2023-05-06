@@ -433,10 +433,10 @@ def get_3DBM_features(cursor, table, lod):
     print(f'\n>> Dataset {table} -- obtaining {lod} 3DBM features')
 
     #Add new column to format bag id <- REMINDER: THIS MAKE IT DOES NOT TAKE BUILDINGS WITH UNDERGROUND PARTS INTO ACCOUNT
-    cursor.execute(f"ALTER TABLE input_data.{lod}_3dbm ADD COLUMN IF NOT EXISTS new_id VARCHAR")
+    cursor.execute(f"ALTER TABLE input_data.{table}_{lod}_3dbm ADD COLUMN IF NOT EXISTS new_id VARCHAR")
 
     cursor.execute(f'''
-        UPDATE input_data.{lod}_3dbm
+        UPDATE input_data.{table}_{lod}_3dbm
         SET new_id = LEFT(id, -2)
         '''
     )
@@ -457,29 +457,28 @@ def get_3DBM_features(cursor, table, lod):
 
     cursor.execute(f'''
         UPDATE training_data.{table}_tmp
-        SET actual_volume_{lod} = {lod}_3dbm.actual_volume_{lod},
-        convex_hull_volume_{lod} = {lod}_3dbm.convex_hull_volume_{lod},
-        footprint_perimeter_{lod} = {lod}_3dbm.footprint_perimeter_{lod},
-        obb_width_{lod} = {lod}_3dbm.obb_width_{lod},
-        obb_length_{lod} = {lod}_3dbm.obb_length_{lod},
-        ground_area_{lod} = {lod}_3dbm.ground_area_{lod},
-        wall_area_{lod} = {lod}_3dbm.wall_area_{lod},
-        roof_area_{lod} = {lod}_3dbm.roof_area_{lod},
-        ground_point_count_{lod} = {lod}_3dbm.ground_point_count_{lod},
-        height_max_{lod} = {lod}_3dbm."max_Z_{lod}" - {lod}_3dbm."ground_Z_{lod}",
-        height_min_roof_{lod} = {lod}_3dbm."min_Z_{lod}" - {lod}_3dbm."ground_Z_{lod}",    
-        shared_walls_area_{lod} = {lod}_3dbm.shared_walls_area_{lod},
-        closest_distance_{lod} = {lod}_3dbm.closest_distance_{lod}
-        FROM input_data.{lod}_3dbm
-        WHERE training_data.{table}_tmp.bag_id = input_data.{lod}_3dbm.new_id;
+        SET actual_volume_{lod} = {table}_{lod}_3dbm.actual_volume_{lod},
+        convex_hull_volume_{lod} = {table}_{lod}_3dbm.convex_hull_volume_{lod},
+        footprint_perimeter_{lod} = {table}_{lod}_3dbm.footprint_perimeter_{lod},
+        obb_width_{lod} = {table}_{lod}_3dbm.obb_width_{lod},
+        obb_length_{lod} = {table}_{lod}_3dbm.obb_length_{lod},
+        ground_area_{lod} = {table}_{lod}_3dbm.ground_area_{lod},
+        wall_area_{lod} = {table}_{lod}_3dbm.wall_area_{lod},
+        roof_area_{lod} = {table}_{lod}_3dbm.roof_area_{lod},
+        ground_point_count_{lod} = {table}_{lod}_3dbm.ground_point_count_{lod},
+        height_max_{lod} = {table}_{lod}_3dbm."max_Z_{lod}" - {table}_{lod}_3dbm."ground_Z_{lod}",
+        height_min_roof_{lod} = {table}_{lod}_3dbm."min_Z_{lod}" - {table}_{lod}_3dbm."ground_Z_{lod}",    
+        shared_walls_area_{lod} = {table}_{lod}_3dbm.shared_walls_area_{lod},
+        closest_distance_{lod} = {table}_{lod}_3dbm.closest_distance_{lod}
+        FROM input_data.{table}_{lod}_3dbm
+        WHERE training_data.{table}_tmp.bag_id = input_data.{table}_{lod}_3dbm.new_id;
         '''
     )
 
     cursor.execute(f'''
-        ALTER TABLE input_data.{lod}_3dbm DROP COLUMN new_id;
+        ALTER TABLE input_data.{table}_{lod}_3dbm DROP COLUMN new_id;
         '''
     )
-
     return
 
 #data cleaning

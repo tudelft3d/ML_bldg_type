@@ -117,6 +117,7 @@ def get_groundtruth(table, citydbx):
 
     #add labelled data
     cursor.execute(f"ALTER TABLE training_data.{table} ADD COLUMN IF NOT EXISTS building_type text[];")
+    cursor.execute(f"ALTER TABLE training_data.{table} ADD COLUMN IF NOT EXISTS building_type2 VARCHAR;")
     cursor.execute(f'''
         UPDATE training_data.{table}
         SET building_type = c0_ep.building_type

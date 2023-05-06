@@ -46,7 +46,7 @@ def import_3DBM_features(cursor, conn1, lod, table):
     #Create table to store 3DBM features
     cursor.execute(f'''
         DROP TABLE IF EXISTS input_data.{table}_{lod}_3dbm;
-        CREATE TABLE input_data.{lod}_3dbm (id VARCHAR, actual_volume_{lod} DOUBLE PRECISION, convex_hull_volume_{lod} DOUBLE PRECISION,
+        CREATE TABLE input_data.{table}_{lod}_3dbm (id VARCHAR, actual_volume_{lod} DOUBLE PRECISION, convex_hull_volume_{lod} DOUBLE PRECISION,
         footprint_perimeter_{lod} DOUBLE PRECISION, obb_width_{lod} DOUBLE PRECISION, obb_length_{lod} DOUBLE PRECISION,
         ground_area_{lod} DOUBLE PRECISION, wall_area_{lod} DOUBLE PRECISION, roof_area_{lod} DOUBLE PRECISION, ground_point_count_{lod} INTEGER,
         max_Z_{lod} DOUBLE PRECISION, min_Z_{lod} DOUBLE PRECISION, ground_Z_{lod} DOUBLE PRECISION,
