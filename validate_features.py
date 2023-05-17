@@ -82,6 +82,21 @@ def validate_no_adjacent_bldg(cursor, table, buffer_size):
         WHERE training_data.{table}_tmp.bag_id = subquery.bag_id;
         '''
     )
+
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS no_adjacent_of_adja_bldg030 INTEGER;")
+
+    cursor.execute(f'''
+        UPDATE training_data.{table}_tmp
+        SET no_adjacent_of_adja_bldg030 = subquery.no_adjacent_of_adja_bldg
+        FROM
+            (SELECT a.bag_id, MAX(b.no_adjacent_bldg) AS no_adjacent_of_adja_bldg
+            FROM training_data.{table}_tmp AS a
+            JOIN training_data.{table}_tmp AS b ON ST_INTERSECTS(a.footprint_buffer030, b.footprint_geom)
+            WHERE a.bag_id != b.bag_id
+            GROUP BY a.bag_id) AS subquery
+        WHERE training_data.{table}_tmp.bag_id = subquery.bag_id;
+        '''
+    )
     
     # Set number of adjacent buildings equal to zero when column is null
     # (except from when footprint geometry is equal to null)
@@ -337,12 +352,13 @@ def validate_height_values(cursor, table):
 def get_height_values_3DBM(cursor, table, lod):
     #get max_Z, min_Z, ground_Z again
     print(f'\n>> Dataset {table} -- obtaining {lod} height values from 3DBM')
+    otable = table[10:]
 
     #Add new column to format bag id <- REMINDER: THIS MAKE IT DOES NOT TAKE BUILDINGS WITH UNDERGROUND PARTS INTO ACCOUNT
-    cursor.execute(f"ALTER TABLE input_data.{lod}_3dbm ADD COLUMN IF NOT EXISTS new_id VARCHAR")
+    cursor.execute(f"ALTER TABLE input_data.{otable}_{lod}_3dbm ADD COLUMN IF NOT EXISTS new_id VARCHAR")
 
     cursor.execute(f'''
-        UPDATE input_data.{lod}_3dbm
+        UPDATE input_data.{otable}_{lod}_3dbm
         SET new_id = LEFT(id, -2)
         '''
     )
@@ -354,16 +370,16 @@ def get_height_values_3DBM(cursor, table, lod):
     cursor.execute(f'''
         UPDATE training_data.{table}_tmp
         SET 
-        max_z_{lod} = {lod}_3dbm."max_Z_{lod}",
-        min_z_{lod} = {lod}_3dbm."min_Z_{lod}",    
-        ground_z_{lod} = {lod}_3dbm."ground_Z_{lod}"
-        FROM input_data.{lod}_3dbm
-        WHERE training_data.{table}_tmp.bag_id = input_data.{lod}_3dbm.new_id;
+        max_z_{lod} = {otable}_{lod}_3dbm."max_Z_{lod}",
+        min_z_{lod} = {otable}_{lod}_3dbm."min_Z_{lod}",    
+        ground_z_{lod} = {otable}_{lod}_3dbm."ground_Z_{lod}"
+        FROM input_data.{otable}_{lod}_3dbm
+        WHERE training_data.{table}_tmp.bag_id = input_data.{otable}_{lod}_3dbm.new_id;
         '''
     )
 
     cursor.execute(f'''
-        ALTER TABLE input_data.{lod}_3dbm DROP COLUMN new_id;
+        ALTER TABLE input_data.{otable}_{lod}_3dbm DROP COLUMN new_id;
         '''
     )
     return
@@ -372,8 +388,8 @@ def main():
     with open('params.json', 'r') as f:
         params = json.load(f)
         
+        table = params['table']
         buffer_size = params['buffer_size']
-        neighbour_distances = params['neighbour_distances']
 
     #get db parameters
     user,password,database,host,port = db_functions.get_db_parameters()
@@ -385,31 +401,31 @@ def main():
     #create a cursor
     cursor = conn.cursor()
 
-    table = 'validate_rh'
+    v1table = 'validate1_' + table
     #create temporary validation table of all buildings to store data used for validation of the features
-    create_temp_validation_table(cursor, table, pkey='bag_id')
+    create_temp_validation_table(cursor, v1table, pkey='bag_id')
 
     #adjacency
-    validate_no_adjacent_bldg(cursor, table, buffer_size)
+    validate_no_adjacent_bldg(cursor, v1table, buffer_size)
 
     #neighbours
-    validate_no_neighbours(cursor, table, neighbour_distances)
+    validate_no_neighbours(cursor, v1table, [25, 50, 75, 100])
 
     #volumes
-    validate_volumes(cursor, table)
+    validate_volumes(cursor, v1table)
 
-    table = 'validate_rh2'
+    v2table = 'validate2_' + table
     #create ANOTHER temporary validation table of all buildings to store data used for validation of the features
-    create_temp_validation_table(cursor, table, pkey='bag_id')
+    create_temp_validation_table(cursor, v2table, pkey='bag_id')
 
     #obb
-    validate_obb(cursor, table)
+    validate_obb(cursor, v2table)
 
     #surface areas
-    validate_surface_areas(cursor, table)
+    validate_surface_areas(cursor, v2table)
 
     #height
-    validate_height_values(cursor, table)
+    validate_height_values(cursor, v2table)
 
     return
 

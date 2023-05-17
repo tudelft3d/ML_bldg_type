@@ -70,7 +70,7 @@ def data_histogram(data):
     From shape the distribution can be observed (Gaussian, skewed, exponential)
     Helps to spot possible outliers
     '''
-    data.hist(layout=(4,6))
+    data.hist()
     pyplot.show()
     return
 
@@ -103,22 +103,7 @@ def data_corrmatrix(data):
     ax = fig.add_subplot(111)
     cax = ax.matshow(correlations, vmin=-1, vmax=1)
     fig.colorbar(cax)
-    ticks = numpy.arange(0,24,1)
-    ax.set_xticks(ticks)
-    ax.set_yticks(ticks)
-    names = list(data.columns.values)
-    ax.set_xticklabels(names[2:], rotation = 90)
-    ax.set_yticklabels(names[2:])
-    pyplot.show()
-    return
-
-def data_corrmatrix2(data):
-    correlations = data.corr()
-    fig = pyplot.figure()
-    ax = fig.add_subplot(111)
-    cax = ax.matshow(correlations, vmin=-1, vmax=1)
-    fig.colorbar(cax)
-    ticks = numpy.arange(0,18,1)
+    ticks = numpy.arange(0,len(data.columns)-2,1)
     ax.set_xticks(ticks)
     ax.set_yticks(ticks)
     names = list(data.columns.values)
@@ -151,7 +136,8 @@ def data_scattermatrix(data):
                                              'wall_area_lod2' : 21,
                                              'roof_area_lod2' : 22,
                                              'height_max_lod2' : 23,
-                                             'height_min_roof_lod2' : 24}))
+                                             'height_min_roof_lod2' : 24,
+                                             'no_storeys' : 25}))
     for subaxis in sm:
         for ax in subaxis:
             ax.xaxis.set_ticks([])
@@ -177,7 +163,8 @@ def data_scattermatrix2(data):
                                              'wall_area_lod2' : 15,
                                              'roof_area_lod2' : 16,
                                              'height_max_lod2' : 17,
-                                             'height_min_roof_lod2' : 18}))
+                                             'height_min_roof_lod2' : 18,
+                                             'no_storeys' : 19}))
     for subaxis in sm:
         for ax in subaxis:
             ax.xaxis.set_ticks([])
@@ -217,9 +204,9 @@ def main():
                       'roof_area_lod1',
                       'height_max_lod1'], axis='columns')
     
-    data_correlation(data, table)
+    #data_correlation(data, table)
     #visualision of correlation
-    data_corrmatrix2(data)
+    data_corrmatrix(data)
 
     #Additional Data visualization
     data_histogram(data)

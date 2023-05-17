@@ -152,7 +152,7 @@ def main():
                                 'fp_area'], axis='columns')
     
     mi_features = data.drop(['fp_perimeter',
-                             'bag_construction_year',
+                             'roof_area_lod2',
                              'obb_length_lod1',
                              'wall_area_lod2',
                              'height_max_lod2',
@@ -163,12 +163,12 @@ def main():
                              'no_neighbours_25m',
                              'no_neighbours_100m'], axis='columns')
     
-    impurity_features = data.drop(['height_max_lod2',
+    impurity_features = data.drop(['roof_area_lod2',
                                    'wall_area_lod2',
                                    'fp_perimeter',
                                    'obb_length_lod1',
                                    'height_min_roof_lod2',
-                                   'no_neighbours_25m',
+                                   'no_neighbours_50m',
                                    'fp_no_vertices',
                                    'bag_no_dwellings',
                                    'no_neighbours_75m',
@@ -176,16 +176,16 @@ def main():
                                    'fp_area'], axis='columns')
     
     permutation_features = data.drop(['no_neighbours_100m',
-                                  'wall_area_lod2',
+                                  'actual_volume_lod2',
                                   'fp_perimeter',
-                                  'no_neighbours_25m',
+                                  'no_neighbours_75m',
                                   'no_neighbours_50m',
                                   'obb_length_lod1',
                                   'fp_no_vertices',
                                   'fp_area',
                                   'height_min_roof_lod2',
                                   'roof_area_lod2',
-                                  'bag_construction_year'], axis='columns')
+                                  'height_max_lod2'], axis='columns')
 
     #SVC
     # -anova-f features

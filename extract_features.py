@@ -21,6 +21,7 @@ def get_buildingfunction(cursor, table):
         FROM 
             (SELECT pandid, ARRAY_AGG(distinct gebruiksdoelen) AS uses
             FROM input_data.verblijfsobject, unnest(pandref) AS pandid, unnest(gebruiksdoel) AS gebruiksdoelen
+            WHERE status LIKE 'Verblijfsobject in gebruik%' AND eindgeldigheid IS NULL 
             GROUP BY pandid) AS subquery
         WHERE training_data.{table}_tmp.bag_id = subquery.pandid;
         '''
@@ -427,6 +428,24 @@ def get_bldg_length_width(cursor, table):
 #     )
 #     return
 
+def get_num_storeys(cursor, table):
+
+    print(f'\n>> Dataset {table} -- obtaining number of storeys')
+
+    cursor.execute(f"ALTER TABLE training_data.{table}_tmp ADD COLUMN IF NOT EXISTS no_storeys INTEGER")
+
+    cursor.execute(f'''
+    UPDATE training_data.{table}_tmp
+    SET no_storeys = subquery.no_storeys
+    FROM
+        (SELECT cityobject.gmlid AS bag_id, building.storeys_above_ground AS no_storeys
+        FROM citydb.cityobject, citydb.building
+        WHERE cityobject.id = building.id AND storeys_above_ground IS NOT NULL
+        ORDER BY gmlid) AS subquery
+    WHERE training_data.{table}_tmp.bag_id = subquery.bag_id;
+    ''')
+    return
+
 #3D problems
 def get_3DBM_features(cursor, table, lod):
 
@@ -608,6 +627,9 @@ def main():
     get_3DBM_features(cursor, table, lod1)
     get_3DBM_features(cursor, table, lod2)
 
+    if table == 'c1_rh':
+        get_num_storeys(cursor, table)
+
     #Clean data
     remove_redundant_features(cursor, table)
     remove_null_values(cursor, table)
@@ -617,7 +639,6 @@ def main():
 
     #close db connection
     db_functions.close_connection(conn, cursor)
-
     return
 
 if __name__ == '__main__':
