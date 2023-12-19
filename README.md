@@ -47,9 +47,12 @@ The order of the scripts listed below is also the order of execution.
 
 ## Parameters
 The `params.json` contains the following parameters that needs be set by the user:
-- `table`: table containing the specific case study.
-- `citydb`: 3D City DB schema containing the specific case study (citydb and citydb2 are reserved for c1_rh).
-- `path_3DBAG`: path to the folder containing the tiles of the 3D BAG subset for the specific case study.
+- `table`: table containing the specific case study to which features needs to be extracted (for all case studies),
+  and to validate features (only `c1_rh`),
+  and to analyze features, select features, tune parameters and apply models (`c1_rh` and `c2_delft`).
+- `table2`: table containing the specific case study to use trained models on.
+- `citydbx`: 3D City DB schema containing the specific case study from which the ground truth needs to be obtained (citydb and citydb2 are reserved for c1_rh).
+- `path_3DBAG`: path to the folder containing the tiles of the 3D BAG subset for the specific case study from which the 3DBM features needs to be extracted.
 - `path_3DBM`: path to 3DBM repository.
 - `buffer_size`: buffer size of the footprints for the computation of the adjacency feature.
 
