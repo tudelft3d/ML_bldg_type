@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib import pyplot
 
 def cross_validation(X_train, y_train, algorithm, param_name, param_range):
-    scoring = 'accuracy'
+    scoring = 'balanced_accuracy'
     ylabel = 'Accuracy'
     if algorithm == 'rf':
         estimator = RandomForestClassifier(random_state=0)
@@ -139,53 +139,102 @@ def main():
                       'height_max_lod1'], axis='columns')
     
     #Remove features based on feature selection methods
-    anova_features = data.drop(['no_neighbours_25m',
-                                'roof_area_lod2',
-                                'fp_perimeter',
-                                'obb_length_lod1',
-                                'fp_no_vertices',
-                                'height_max_lod2',
-                                'height_min_roof_lod2',
-                                'bag_construction_year',
-                                'no_neighbours_75m',
-                                'no_neighbours_100m',
-                                'fp_area'], axis='columns')
-    
-    mi_features = data.drop(['fp_perimeter',
-                             'roof_area_lod2',
-                             'obb_length_lod1',
-                             'wall_area_lod2',
-                             'height_max_lod2',
-                             'height_min_roof_lod2',
-                             'bag_no_dwellings',
-                             'fp_no_vertices',
-                             'no_neighbours_75m',
-                             'no_neighbours_25m',
-                             'no_neighbours_100m'], axis='columns')
-    
-    impurity_features = data.drop(['roof_area_lod2',
-                                   'wall_area_lod2',
-                                   'fp_perimeter',
-                                   'obb_length_lod1',
-                                   'height_min_roof_lod2',
-                                   'no_neighbours_50m',
-                                   'fp_no_vertices',
-                                   'bag_no_dwellings',
-                                   'no_neighbours_75m',
-                                   'no_neighbours_100m',
-                                   'fp_area'], axis='columns')
-    
-    permutation_features = data.drop(['no_neighbours_100m',
-                                  'actual_volume_lod2',
-                                  'fp_perimeter',
-                                  'no_neighbours_75m',
-                                  'no_neighbours_50m',
-                                  'obb_length_lod1',
-                                  'fp_no_vertices',
-                                  'fp_area',
-                                  'height_min_roof_lod2',
-                                  'roof_area_lod2',
-                                  'height_max_lod2'], axis='columns')
+    if table == 'c1_rh':
+        anova_features = data.drop(['no_neighbours_25m',
+                                    'roof_area_lod2',
+                                    'fp_perimeter',
+                                    'obb_length_lod1',
+                                    'fp_no_vertices',
+                                    'height_max_lod2',
+                                    'height_min_roof_lod2',
+                                    'bag_construction_year',
+                                    'no_neighbours_75m',
+                                    'no_neighbours_100m',
+                                    'fp_area'], axis='columns')
+
+        mi_features = data.drop(['fp_perimeter',
+                                    'roof_area_lod2',
+                                    'obb_length_lod1',
+                                    'wall_area_lod2',
+                                    'height_max_lod2',
+                                    'height_min_roof_lod2',
+                                    'bag_no_dwellings',
+                                    'fp_no_vertices',
+                                    'no_neighbours_75m',
+                                    'no_neighbours_25m',
+                                    'no_neighbours_100m'], axis='columns')
+
+        impurity_features = data.drop(['roof_area_lod2',
+                                        'wall_area_lod2',
+                                        'fp_perimeter',
+                                        'obb_length_lod1',
+                                        'height_min_roof_lod2',
+                                        'no_neighbours_50m',
+                                        'fp_no_vertices',
+                                        'bag_no_dwellings',
+                                        'no_neighbours_75m',
+                                        'no_neighbours_100m',
+                                        'fp_area'], axis='columns')
+
+        permutation_features = data.drop(['no_neighbours_100m',
+                                        'actual_volume_lod2',
+                                        'fp_perimeter',
+                                        'no_neighbours_75m',
+                                        'no_neighbours_50m',
+                                        'obb_length_lod1',
+                                        'fp_no_vertices',
+                                        'fp_area',
+                                        'height_min_roof_lod2',
+                                        'roof_area_lod2',
+                                        'height_max_lod2'], axis='columns')
+    elif table == 'c2_delft':
+        anova_features = data.drop(['actual_volume_lod2',
+                                    'no_adjacent_of_adja_bldg',
+                                    'roof_area_lod2',
+                                    'height_min_roof_lod2',
+                                    'fp_area',
+                                    'no_neighbours_50m',
+                                    'fp_no_vertices',
+                                    'no_neighbours_25m',
+                                    'no_neighbours_75m',
+                                    'no_neighbours_100m',
+                                    'bag_construction_year'], axis='columns')
+
+        mi_features = data.drop(['wall_area_lod2',
+                                 'height_max_lod2',
+                                 'no_adjacent_bldg',
+                                 'bag_construction_year',
+                                 'no_adjacent_of_adja_bldg',
+                                 'height_min_roof_lod2',
+                                 'fp_no_vertices',
+                                 'no_neighbours_25m',
+                                 'no_neighbours_50m',
+                                 'no_neighbours_100m',
+                                 'no_neighbours_75m'], axis='columns')
+
+        impurity_features = data.drop(['wall_area_lod2',
+                                       'roof_area_lod2',
+                                       'fp_perimeter',
+                                       'obb_length_lod1',
+                                       'height_min_roof_lod2',
+                                       'bag_construction_year',
+                                       'no_neighbours_100m',
+                                       'no_neighbours_75m',
+                                       'no_neighbours_50m',
+                                       'fp_no_vertices',
+                                       'no_neighbours_25m'], axis='columns')
+
+        permutation_features = data.drop(['bag_construction_year',
+                                          'actual_volume_lod2',
+                                          'height_min_roof_lod2',
+                                          'height_max_lod2',
+                                          'roof_area_lod2',
+                                          'no_neighbours_25m',
+                                          'no_neighbours_100m',
+                                          'no_neighbours_50m',
+                                          'fp_no_vertices',
+                                          'fp_perimeter',
+                                          'no_neighbours_75m'], axis='columns')
 
     #SVC
     # -anova-f features

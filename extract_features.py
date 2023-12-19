@@ -152,7 +152,9 @@ def get_num_adjacent_bldg(cursor, table, buffer_size):
         FROM
             (SELECT a.bag_id, COUNT(*) AS no_adjacent
             FROM training_data.{table}_tmp AS a
-            JOIN training_data.{table}_tmp AS b ON ST_INTERSECTS(a.footprint_buffer, b.footprint_geom)
+            JOIN training_data.{table}_tmp AS b
+            ON a.footprint_buffer && b.footprint_geom
+            AND ST_INTERSECTS(a.footprint_buffer, b.footprint_geom)
             WHERE a.bag_id != b.bag_id
             AND a.bag_function != 'Others' AND a.bag_function != 'Unknown' 
             AND b.bag_function != 'Others' AND b.bag_function != 'Unknown' 
@@ -187,7 +189,9 @@ def get_num_adjacent_bldg_of_adjacent_bldg(cursor, table):
         FROM
             (SELECT a.bag_id, MAX(b.no_adjacent_bldg) AS no_adjacent_of_adja_bldg
             FROM training_data.{table}_tmp AS a
-            JOIN training_data.{table}_tmp AS b ON ST_INTERSECTS(a.footprint_buffer, b.footprint_geom)
+            JOIN training_data.{table}_tmp AS b
+            ON a.footprint_buffer && b.footprint_geom
+            AND ST_INTERSECTS(a.footprint_buffer, b.footprint_geom)
             WHERE a.bag_id != b.bag_id
             GROUP BY a.bag_id) AS subquery
         WHERE training_data.{table}_tmp.bag_id = subquery.bag_id;
@@ -572,7 +576,8 @@ def remove_null_values(cursor, table):
         wall_area_lod2 IS NULL OR
         roof_area_lod2 IS NULL OR
         height_max_lod2 IS NULL OR
-        height_min_roof_lod2 IS NULL;
+        height_min_roof_lod2 IS NULL OR
+        bag_construction_year IS NULL;
         '''
     )
     return

@@ -51,7 +51,7 @@ def data_correlation(data, table):
     correlations = data.corr(method='pearson', numeric_only=True)
     print(correlations)
 
-    # #output to csv file
+    #output to csv file
     os.makedirs('results', exist_ok=True)  
     correlations.to_csv(f'results/{table}_data_corr.csv')
     return
@@ -188,8 +188,8 @@ def main():
     data = pd.read_sql_query(f"SELECT * FROM training_data.{table};", conn)
 
     #Data statistics
-    # quick_datacheck(data)
-    # stats_data(data, table)
+    quick_datacheck(data)
+    stats_data(data, table)
     class_distribution(data)
     data_correlation(data, table)
     #visualision of correlation
@@ -204,14 +204,14 @@ def main():
                       'roof_area_lod1',
                       'height_max_lod1'], axis='columns')
     
-    #data_correlation(data, table)
+    data_correlation(data, table)
     #visualision of correlation
     data_corrmatrix(data)
 
     #Additional Data visualization
     data_histogram(data)
-    # data_densityplots(data)
-    # data_boxplots(data)
+    data_densityplots(data)
+    data_boxplots(data)
     data_scattermatrix2(data)
     return
 

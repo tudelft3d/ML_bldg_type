@@ -235,7 +235,7 @@ def validate_surface_areas(cursor, table):
         SET roof_area_lod1_postgis = subquery.roof_area_lod1_postgis
         FROM
             (SELECT cityobject.gmlid, SUM(ST_Area(surface_geometry.geometry)) AS roof_area_lod1_postgis
-            FROM citydb2.cityobject, citydb2.thematic_surface, citydb2.surface_geometry
+            FROM citydb.cityobject, citydb.thematic_surface, citydb.surface_geometry
             WHERE cityobject.id = thematic_surface.building_id AND
             thematic_surface.lod2_multi_surface_id = surface_geometry.root_id AND
             thematic_surface.objectclass_id = 33

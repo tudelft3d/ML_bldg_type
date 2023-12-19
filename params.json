@@ -1,7 +1,8 @@
 {
-    "table": "c2_delft",
-    "citydbx": "citydb3",
-    "path_3DBAG": "./data/3DBAG/c2_delft/",
+    "table": "c1_rh",
+    "table2": "c2_delft",
+    "citydbx": "citydb",
+    "path_3DBAG": "./data/3DBAG/c3_vrijstaande/",
     "path_3DBM": "../3d-building-metrics-main/",
     "buffer_size": 0.1,
     "rf_n_estimators": [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
