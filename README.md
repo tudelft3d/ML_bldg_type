@@ -4,7 +4,7 @@ This repository contains the code developed during the graduation project of Hoi
 ## Functional Requirements
 This repository requires a PostGIS database containing:
 - The [CityGML-Based 3D City model test-bed for Energy-Related Applications](https://github.com/tudelft3d/test-bed4UBEM) (version 2022-11-07) in a [3D City database](https://www.3dcitydb.org/3dcitydb/) under the `citydb` schema.
-- The [3D BAG](https://3dbag.nl) (v21.09.8) in the same 3D City database under the `citydb2` schema.
+- The [3D BAG](https://3dbag.nl) (v21.09.8) in the same 3D City database under the `citydb2` schema. More schema's can be added to store different subsets of the 3D BAG. 
 - The [Dutch National Energylabel dataset](https://www.ep-online.nl/) (v20230101_v2) imported as csv file into the `input_data` schema.
 - The [BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) (retrieved on January 8 2023) dataset imported with `ogr2ogr` into the `input_data` schema.
 
@@ -33,7 +33,7 @@ The implementation also requires the repository of [3DBM](https://github.com/tud
 
 ## Usage
 The order of the scripts listed below is also the order of execution.
-- `python utilize_3DBM.py` to merge the 3D BAG JSON files and filter LoD 1.2 and 2.2 with `cjio`, compute metrics of both LoDs with 3DBM and store the results in `merged_lod1.csv` and `merged_lod2.csv`. The results for this script are included in this repository, since running the script takes about 20 hours!
+- `python utilize_3DBM.py` to merge the 3D BAG JSON files and filter LoD 1.2 and 2.2 with `cjio`, compute metrics of both LoDs with 3DBM and store the results in `merged_lod1.csv` and `merged_lod2.csv`. The results of this script for `c1_rh` are included in this repository, since running the script on the `c1_rh` files takes about 20 hours!
 - `python import_3DBM.py` to keep only the relevant features from the results and import them to the PostGIS database in the `input_data` schema.
 - `python import_groundtruth.py` to extract the labelled data from the [Dutch National Energylabel dataset](https://www.ep-online.nl/) and the [CityGML-Based 3D City model test-bed for Energy-Related Applications](https://github.com/tudelft3d/test-bed4UBEM) to the `training_data` schema.
 - `python extract_features.py` to extract features from the [BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) dataset and [3D BAG](https://3dbag.nl) dataset to the `training_data`.
@@ -50,7 +50,7 @@ The `params.json` contains the following parameters that needs be set by the use
 - `table`: table containing the specific case study to which features needs to be extracted (for all case studies),
   and to validate features (only `c1_rh`),
   and to analyze features, select features, tune parameters and apply models (`c1_rh` and `c2_delft`).
-- `table2`: table containing the specific case study to use trained models on.
+- `table2`: table containing the specific case study to use the trained models on.
 - `citydbx`: 3D City DB schema containing the specific case study from which the ground truth needs to be obtained (citydb and citydb2 are reserved for c1_rh).
 - `path_3DBAG`: path to the folder containing the tiles of the 3D BAG subset for the specific case study from which the 3DBM features needs to be extracted.
 - `path_3DBM`: path to 3DBM repository.
