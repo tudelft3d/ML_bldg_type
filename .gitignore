@@ -26,7 +26,11 @@ lvbag-extract-nl.zip
 v20230101_v2_csv.csv
 
 # ignore generated results
-results/
+results/labels/
+
+results/predictions/
+
+results/*.csv
 
 # ignore folders
 __pycache__/

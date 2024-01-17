@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib import pyplot
 
 def cross_validation(X_train, y_train, algorithm, param_name, param_range):
-    scoring = 'balanced_accuracy'
+    scoring = 'accuracy'
     ylabel = 'Accuracy'
     if algorithm == 'rf':
         estimator = RandomForestClassifier(random_state=0)
