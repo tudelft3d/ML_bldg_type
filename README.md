@@ -58,4 +58,7 @@ The `params.json` contains the following parameters that needs be set by the use
 
 It also contains the hyperparameters for Random Forest and SVC, the validation curves plotted in `tune_parameters.py` may help in defining the range of these hyperparameters.
 
+## Replicating results
+For replicating the results obtained for the graduation project the trained models are provided in this repository. As well as the resulting training data tables, these can be restored from the DUMP files.
+
 At the current time, the scripts support only one database connection.
