@@ -1,5 +1,5 @@
 # ignore the text file with the database connection parameters
-db_parameters.txt
+db_parameters*.txt
 
 # ignore macOS system files
 .DS_Store
@@ -7,9 +7,9 @@ db_parameters.txt
 # ignore data files
 data/3DBAG/c1_rh/*.city.json
 
-data/3DBAG/c2_delft/*city.json
+data/3DBAG/c2_delft/
 
-data/3DBAG/c2_delft/*.csv
+data/3DBAG/c3*/
 
 data/*/*.gml
 
